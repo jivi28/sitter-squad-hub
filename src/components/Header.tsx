@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Menu, X } from "lucide-react";
+import { Menu, X, LogOut } from "lucide-react";
+import { useAuth } from "@/hooks/useAuth";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const { user, signOut } = useAuth();
 
   return (
     <header className="bg-card border-b border-border shadow-card sticky top-0 z-50">
@@ -23,12 +25,26 @@ const Header = () => {
             <a href="/about" className="text-muted-foreground hover:text-foreground transition-colors">
               About Us
             </a>
-            <Button variant="outline" size="sm" onClick={() => window.location.href = '/parent-signup'}>
-              Parent Login
-            </Button>
-            <Button variant="trust" size="sm" onClick={() => window.location.href = '/sitter-signup'}>
-              Become a Sitter
-            </Button>
+            {user ? (
+              <>
+                <Button variant="outline" size="sm" onClick={() => window.location.href = '/parent-signup'}>
+                  My Profile
+                </Button>
+                <Button variant="outline" size="sm" onClick={signOut}>
+                  <LogOut className="w-4 h-4 mr-2" />
+                  Logout
+                </Button>
+              </>
+            ) : (
+              <>
+                <Button variant="outline" size="sm" onClick={() => window.location.href = '/auth'}>
+                  Parent Login
+                </Button>
+                <Button variant="trust" size="sm" onClick={() => window.location.href = '/sitter-signup'}>
+                  Become a Sitter
+                </Button>
+              </>
+            )}
           </nav>
 
           <button
@@ -48,12 +64,26 @@ const Header = () => {
               <a href="/about" className="text-muted-foreground hover:text-foreground transition-colors">
                 About Us
               </a>
-              <Button variant="outline" size="sm" className="self-start" onClick={() => window.location.href = '/parent-signup'}>
-                Parent Login
-              </Button>
-              <Button variant="trust" size="sm" className="self-start" onClick={() => window.location.href = '/sitter-signup'}>
-                Become a Sitter
-              </Button>
+              {user ? (
+                <>
+                  <Button variant="outline" size="sm" className="self-start" onClick={() => window.location.href = '/parent-signup'}>
+                    My Profile
+                  </Button>
+                  <Button variant="outline" size="sm" className="self-start" onClick={signOut}>
+                    <LogOut className="w-4 h-4 mr-2" />
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button variant="outline" size="sm" className="self-start" onClick={() => window.location.href = '/auth'}>
+                    Parent Login
+                  </Button>
+                  <Button variant="trust" size="sm" className="self-start" onClick={() => window.location.href = '/sitter-signup'}>
+                    Become a Sitter
+                  </Button>
+                </>
+              )}
             </nav>
           </div>
         )}
