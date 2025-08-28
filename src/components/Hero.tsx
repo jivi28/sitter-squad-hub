@@ -1,8 +1,10 @@
 import { Button } from "@/components/ui/button";
 import { Star, Shield, Users } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
+import { useAuth } from "@/hooks/useAuth";
 
 const Hero = () => {
+  const { user } = useAuth();
   return (
     <section className="bg-gradient-soft py-20">
       <div className="container mx-auto px-6">
@@ -22,9 +24,11 @@ const Hero = () => {
               <Button variant="hero" size="lg" className="text-lg px-8 py-6" onClick={() => window.location.href = '/parent-signup'}>
                 Find a Sitter Now
               </Button>
-              <Button variant="book" size="lg" className="text-lg px-8 py-6" onClick={() => window.location.href = '/sitter-signup'}>
-                Become a Sitter
-              </Button>
+              {!user && (
+                <Button variant="book" size="lg" className="text-lg px-8 py-6" onClick={() => window.location.href = '/sitter-signup'}>
+                  Become a Sitter
+                </Button>
+              )}
             </div>
 
             <div className="flex items-center space-x-8 pt-4">
