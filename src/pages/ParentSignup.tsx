@@ -143,8 +143,8 @@ const ParentSignup = () => {
         });
       }
 
-      // Redirect to main page
-      window.location.href = '/';
+      // Redirect to main page and scroll to booking
+      window.location.href = '/#booking-system';
     } catch (error: any) {
       console.error('Profile save error:', error);
       setError(error.message || 'Failed to save profile');
