@@ -1,10 +1,13 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, Clock, MapPin, Star } from "lucide-react";
+import { Calendar, Clock, MapPin, Star, Loader2 } from "lucide-react";
+import { supabase } from "@/integrations/supabase/client";
+import { useAuth } from "@/hooks/useAuth";
+import { useToast } from "@/hooks/use-toast";
 
 interface BookingDetails {
   date: string;
@@ -15,7 +18,10 @@ interface BookingDetails {
 }
 
 const BookingSystem = () => {
+  const { user } = useAuth();
+  const { toast } = useToast();
   const [selectedSitter, setSelectedSitter] = useState<number | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
   const [bookingDetails, setBookingDetails] = useState<BookingDetails>({
     date: "",
     startTime: "",
@@ -86,6 +92,68 @@ const BookingSystem = () => {
     // Reset selected sitter when booking details change
     if (selectedSitter) {
       setSelectedSitter(null);
+    }
+  };
+
+  const handleBooking = async () => {
+    if (!user || !selectedSitter || !isBookingComplete()) {
+      toast({
+        title: "Booking incomplete",
+        description: "Please fill in all required fields and select a sitter.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    const selectedSitterData = sitters.find(s => s.id === selectedSitter);
+    if (!selectedSitterData) return;
+
+    setIsLoading(true);
+
+    try {
+      const totalCost = selectedSitterData.hourlyRate * estimatedHours;
+
+      const { error } = await supabase
+        .from('bookings')
+        .insert({
+          user_id: user.id,
+          sitter_name: selectedSitterData.name,
+          sitter_hourly_rate: selectedSitterData.hourlyRate,
+          booking_date: bookingDetails.date,
+          start_time: bookingDetails.startTime,
+          end_time: bookingDetails.endTime,
+          num_children: bookingDetails.children,
+          special_notes: bookingDetails.notes || null,
+          total_cost: totalCost,
+          status: 'pending'
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Booking submitted!",
+        description: `Your booking with ${selectedSitterData.name} has been submitted successfully. You'll receive a confirmation email shortly.`,
+      });
+
+      // Reset form
+      setSelectedSitter(null);
+      setBookingDetails({
+        date: "",
+        startTime: "",
+        endTime: "",
+        children: 1,
+        notes: ""
+      });
+
+    } catch (error: any) {
+      console.error('Booking error:', error);
+      toast({
+        title: "Booking failed",
+        description: error.message || "There was an error submitting your booking. Please try again.",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -260,9 +328,11 @@ const BookingSystem = () => {
                   variant="book" 
                   className="w-full" 
                   size="lg"
-                  disabled={!selectedSitter || !isBookingComplete() || estimatedHours <= 0}
+                  disabled={!selectedSitter || !isBookingComplete() || estimatedHours <= 0 || isLoading || !user}
+                  onClick={handleBooking}
                 >
-                  {!showSitters ? "Fill Details to Continue" : !selectedSitter ? "Select a Sitter" : "Book Now"}
+                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+                  {!user ? "Login Required" : !showSitters ? "Fill Details to Continue" : !selectedSitter ? "Select a Sitter" : isLoading ? "Booking..." : "Book Now"}
                 </Button>
 
                 <div className="text-xs text-muted-foreground text-center">

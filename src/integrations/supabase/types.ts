@@ -14,6 +14,54 @@ export type Database = {
   }
   public: {
     Tables: {
+      bookings: {
+        Row: {
+          booking_date: string
+          created_at: string
+          end_time: string
+          id: string
+          num_children: number
+          sitter_hourly_rate: number
+          sitter_name: string
+          special_notes: string | null
+          start_time: string
+          status: string
+          total_cost: number
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          booking_date: string
+          created_at?: string
+          end_time: string
+          id?: string
+          num_children: number
+          sitter_hourly_rate: number
+          sitter_name: string
+          special_notes?: string | null
+          start_time: string
+          status?: string
+          total_cost: number
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          booking_date?: string
+          created_at?: string
+          end_time?: string
+          id?: string
+          num_children?: number
+          sitter_hourly_rate?: number
+          sitter_name?: string
+          special_notes?: string | null
+          start_time?: string
+          status?: string
+          total_cost?: number
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           address: string
