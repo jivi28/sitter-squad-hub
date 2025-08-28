@@ -1,10 +1,58 @@
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Star, Shield, Users } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const Hero = () => {
   const { user } = useAuth();
+  const [hasCompleteProfile, setHasCompleteProfile] = useState(false);
+
+  useEffect(() => {
+    const checkProfile = async () => {
+      if (!user) return;
+      
+      try {
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (error) throw error;
+
+        if (data) {
+          // Check if all required fields are filled
+          const isComplete = !!(
+            data.first_name &&
+            data.last_name &&
+            data.phone &&
+            data.address &&
+            data.num_children &&
+            data.children_ages
+          );
+          setHasCompleteProfile(isComplete);
+        }
+      } catch (error) {
+        console.error('Error checking profile:', error);
+      }
+    };
+
+    checkProfile();
+  }, [user]);
+
+  const handleFindSitterClick = () => {
+    if (user && hasCompleteProfile) {
+      // Scroll to booking section
+      const bookingSection = document.getElementById('booking-system');
+      if (bookingSection) {
+        bookingSection.scrollIntoView({ behavior: 'smooth' });
+      }
+    } else {
+      window.location.href = '/parent-signup';
+    }
+  };
   return (
     <section className="bg-gradient-soft py-20">
       <div className="container mx-auto px-6">
@@ -21,8 +69,8 @@ const Hero = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button variant="hero" size="lg" className="text-lg px-8 py-6" onClick={() => window.location.href = '/parent-signup'}>
-                Find a Sitter Now
+              <Button variant="hero" size="lg" className="text-lg px-8 py-6" onClick={handleFindSitterClick}>
+                {user && hasCompleteProfile ? 'Find a Sitter Now' : 'Find a Sitter Now'}
               </Button>
               {!user && (
                 <Button variant="book" size="lg" className="text-lg px-8 py-6" onClick={() => window.location.href = '/sitter-signup'}>
