@@ -69,9 +69,15 @@ const Hero = () => {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button variant="hero" size="lg" className="text-lg px-8 py-6" onClick={handleFindSitterClick}>
-                {user && hasCompleteProfile ? 'Find a Sitter Now' : 'Find a Sitter Now'}
-              </Button>
+              {user ? (
+                <Button variant="hero" size="lg" className="text-lg px-8 py-6" onClick={handleFindSitterClick}>
+                  Find a Sitter Now
+                </Button>
+              ) : (
+                <Button variant="hero" size="lg" className="text-lg px-8 py-6" onClick={() => window.location.href = '/auth'}>
+                  Sign In to Book
+                </Button>
+              )}
               {!user && (
                 <Button variant="book" size="lg" className="text-lg px-8 py-6" onClick={() => window.location.href = '/sitter-signup'}>
                   Become a Sitter

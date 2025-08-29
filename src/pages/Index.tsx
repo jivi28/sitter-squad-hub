@@ -51,10 +51,9 @@ const Index = () => {
     checkProfile();
   }, [user, loading]);
 
-  // Show booking section if:
-  // - User is not logged in (allow browsing)
+  // Show booking section only if:
   // - User is logged in AND has complete profile
-  const showBookingSection = !user || (user && hasCompleteProfile);
+  const showBookingSection = user && hasCompleteProfile;
 
   if (loading || profileLoading) {
     return (
