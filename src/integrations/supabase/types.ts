@@ -107,6 +107,75 @@ export type Database = {
         }
         Relationships: []
       }
+      sitters: {
+        Row: {
+          address: string
+          approved_at: string | null
+          availability: Json | null
+          child_age_groups: Json | null
+          created_at: string
+          date_of_birth: string
+          experience: string
+          first_name: string
+          grade: string
+          hourly_rate: number
+          id: string
+          last_name: string
+          phone: string
+          reference_contacts: string | null
+          school: string
+          special_skills: string | null
+          status: string
+          transportation: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          address: string
+          approved_at?: string | null
+          availability?: Json | null
+          child_age_groups?: Json | null
+          created_at?: string
+          date_of_birth: string
+          experience: string
+          first_name: string
+          grade: string
+          hourly_rate: number
+          id?: string
+          last_name: string
+          phone: string
+          reference_contacts?: string | null
+          school: string
+          special_skills?: string | null
+          status?: string
+          transportation?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          address?: string
+          approved_at?: string | null
+          availability?: Json | null
+          child_age_groups?: Json | null
+          created_at?: string
+          date_of_birth?: string
+          experience?: string
+          first_name?: string
+          grade?: string
+          hourly_rate?: number
+          id?: string
+          last_name?: string
+          phone?: string
+          reference_contacts?: string | null
+          school?: string
+          special_skills?: string | null
+          status?: string
+          transportation?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never
