@@ -57,7 +57,22 @@ const ParentSignup = () => {
 
         if (data) {
           setHasProfile(true);
-          // Pre-fill form with existing data
+          
+          // Check if profile is complete (all required fields filled)
+          const isComplete = data.first_name && 
+                           data.last_name && 
+                           data.phone && 
+                           data.address && 
+                           data.num_children && 
+                           data.children_ages;
+
+          if (isComplete) {
+            // Redirect to main page if profile is already complete
+            window.location.href = '/';
+            return;
+          }
+
+          // Pre-fill form with existing data if profile is incomplete
           setFormData(prev => ({
             ...prev,
             firstName: data.first_name || "",
