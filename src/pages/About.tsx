@@ -37,8 +37,8 @@ const About = () => {
                 affordable childcare while helping students earn extra income.
               </p>
               <div className="flex justify-center space-x-4">
-                <Button variant="hero" size="lg">Join as Parent</Button>
-                <Button variant="book" size="lg">Become a Sitter</Button>
+                <Button variant="hero" size="lg" onClick={() => window.location.href = '/parent-signup'}>Join as Parent</Button>
+                <Button variant="book" size="lg" onClick={() => window.location.href = '/sitter-signup'}>Become a Sitter</Button>
               </div>
             </div>
           </div>
@@ -135,10 +135,10 @@ const About = () => {
               Join our growing community of families and sitters today
             </p>
             <div className="flex flex-col sm:flex-row gap-4 justify-center">
-              <Button variant="hero" size="lg" className="text-lg px-8 py-6">
+              <Button variant="hero" size="lg" className="text-lg px-8 py-6" onClick={() => window.location.href = '/parent-signup'}>
                 Find a Sitter
               </Button>
-              <Button variant="book" size="lg" className="text-lg px-8 py-6">
+              <Button variant="book" size="lg" className="text-lg px-8 py-6" onClick={() => window.location.href = '/sitter-signup'}>
                 Apply to be a Sitter
               </Button>
             </div>
