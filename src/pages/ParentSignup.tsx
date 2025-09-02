@@ -66,13 +66,17 @@ const ParentSignup = () => {
                            data.num_children && 
                            data.children_ages;
 
-          if (isComplete) {
-            // Redirect to main page if profile is already complete
+          // Check if user is explicitly accessing profile page (via "My Profile" button)
+          const urlParams = new URLSearchParams(window.location.search);
+          const isExplicitAccess = urlParams.get('edit') === 'true';
+
+          if (isComplete && !isExplicitAccess) {
+            // Redirect to main page if profile is already complete and not explicit access
             window.location.href = '/';
             return;
           }
 
-          // Pre-fill form with existing data if profile is incomplete
+          // Pre-fill form with existing data
           setFormData(prev => ({
             ...prev,
             firstName: data.first_name || "",

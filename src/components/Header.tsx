@@ -27,7 +27,7 @@ const Header = () => {
             </a>
             {user ? (
               <>
-                <Button variant="outline" size="sm" onClick={() => window.location.href = '/parent-signup'}>
+                <Button variant="outline" size="sm" onClick={() => window.location.href = '/parent-signup?edit=true'}>
                   My Profile
                 </Button>
                 <Button variant="outline" size="sm" onClick={signOut}>
@@ -66,7 +66,7 @@ const Header = () => {
               </a>
               {user ? (
                 <>
-                  <Button variant="outline" size="sm" className="self-start" onClick={() => window.location.href = '/parent-signup'}>
+                  <Button variant="outline" size="sm" className="self-start" onClick={() => window.location.href = '/parent-signup?edit=true'}>
                     My Profile
                   </Button>
                   <Button variant="outline" size="sm" className="self-start" onClick={signOut}>
