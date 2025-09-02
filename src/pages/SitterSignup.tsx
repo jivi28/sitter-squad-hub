@@ -1,27 +1,34 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { GraduationCap, DollarSign, Calendar } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { GraduationCap, DollarSign, Calendar, AlertCircle, Loader2 } from "lucide-react";
 import Header from "@/components/Header";
+import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
 
 const SitterSignup = () => {
+  const { user, loading: authLoading } = useAuth();
+  const { toast } = useToast();
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [success, setSuccess] = useState(false);
+
   const [formData, setFormData] = useState({
     firstName: "",
     lastName: "",
-    email: "",
     phone: "",
     dateOfBirth: "",
     school: "",
     grade: "",
     address: "",
     hourlyRate: "",
-    availability: [],
     experience: "",
-    childAgeGroups: [],
     specialSkills: "",
     references: "",
     transportation: "",
@@ -29,6 +36,68 @@ const SitterSignup = () => {
     agreeBackground: false,
     over16: false
   });
+
+  // Check authentication and existing sitter profile
+  useEffect(() => {
+    if (authLoading) return;
+    
+    if (!user) {
+      window.location.href = '/sitter-auth';
+      return;
+    }
+
+    // Check if sitter profile already exists
+    const checkSitterProfile = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('sitters')
+          .select('*')
+          .eq('user_id', user.id)
+          .single();
+
+        if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
+          throw error;
+        }
+
+        if (data) {
+          // Check if user is explicitly accessing profile page (via "My Profile" button)
+          const urlParams = new URLSearchParams(window.location.search);
+          const isExplicitAccess = urlParams.get('edit') === 'true';
+
+          if (data.status === 'approved' && !isExplicitAccess) {
+            // Redirect to main page if already approved and not explicit access
+            window.location.href = '/';
+            return;
+          }
+
+          // Pre-fill form with existing data
+          setFormData(prev => ({
+            ...prev,
+            firstName: data.first_name || "",
+            lastName: data.last_name || "",
+            phone: data.phone || "",
+            dateOfBirth: data.date_of_birth || "",
+            school: data.school || "",
+            grade: data.grade || "",
+            address: data.address || "",
+            hourlyRate: data.hourly_rate?.toString() || "",
+            experience: data.experience || "",
+            specialSkills: data.special_skills || "",
+            references: data.reference_contacts || "",
+            transportation: data.transportation || ""
+          }));
+
+          if (data.status === 'approved') {
+            setSuccess(true);
+          }
+        }
+      } catch (error) {
+        console.error('Error checking sitter profile:', error);
+      }
+    };
+
+    checkSitterProfile();
+  }, [user, authLoading]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
@@ -39,11 +108,129 @@ const SitterSignup = () => {
     setFormData(prev => ({ ...prev, [name]: checked }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    console.log("Sitter signup form submitted:", formData);
-    // Handle form submission
+  const handleSelectChange = (name: string, value: string) => {
+    setFormData(prev => ({ ...prev, [name]: value }));
   };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
+    
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Validate required fields
+      if (!formData.firstName || !formData.lastName || !formData.phone || 
+          !formData.dateOfBirth || !formData.school || !formData.grade || 
+          !formData.address || !formData.hourlyRate || !formData.experience) {
+        throw new Error('Please fill in all required fields');
+      }
+
+      if (!formData.agreeTerms || !formData.agreeBackground || !formData.over16) {
+        throw new Error('Please agree to all required terms');
+      }
+
+      // Prepare data for database
+      const sitterData = {
+        user_id: user.id,
+        first_name: formData.firstName,
+        last_name: formData.lastName,
+        phone: formData.phone,
+        date_of_birth: formData.dateOfBirth,
+        school: formData.school,
+        grade: formData.grade,
+        address: formData.address,
+        hourly_rate: parseInt(formData.hourlyRate),
+        experience: formData.experience,
+        special_skills: formData.specialSkills || null,
+        reference_contacts: formData.references || null,
+        transportation: formData.transportation || null,
+        status: 'pending'
+      };
+
+      // Check if profile already exists
+      const { data: existing } = await supabase
+        .from('sitters')
+        .select('id')
+        .eq('user_id', user.id)
+        .single();
+
+      if (existing) {
+        // Update existing profile
+        const { error } = await supabase
+          .from('sitters')
+          .update(sitterData)
+          .eq('user_id', user.id);
+
+        if (error) throw error;
+        
+        toast({
+          title: "Application Updated!",
+          description: "Your sitter application has been updated successfully.",
+        });
+      } else {
+        // Create new profile
+        const { error } = await supabase
+          .from('sitters')
+          .insert([sitterData]);
+
+        if (error) throw error;
+        
+        toast({
+          title: "Application Submitted!",
+          description: "Your sitter application has been submitted for review.",
+        });
+      }
+
+      setSuccess(true);
+    } catch (error: any) {
+      console.error('Error submitting sitter application:', error);
+      setError(error.message || 'Failed to submit application');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  if (authLoading) {
+    return (
+      <div className="min-h-screen bg-background flex items-center justify-center">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  if (success) {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="py-12">
+          <div className="container mx-auto px-6">
+            <div className="max-w-2xl mx-auto text-center">
+              <div className="bg-success/10 border border-success/20 rounded-lg p-8 mb-8">
+                <h1 className="text-3xl font-bold text-foreground mb-4">
+                  Application Submitted Successfully! 🎉
+                </h1>
+                <p className="text-lg text-muted-foreground mb-6">
+                  Thank you for applying to become a BabySit Club sitter. We'll review your application and get back to you within 2-3 business days.
+                </p>
+                <div className="space-y-2 text-sm text-muted-foreground">
+                  <p><strong>Next Steps:</strong></p>
+                  <p>1. Background check verification (2-3 days)</p>
+                  <p>2. Phone interview with our team</p>
+                  <p>3. Safety training session</p>
+                  <p>4. Start receiving booking requests!</p>
+                </div>
+              </div>
+              <Button onClick={() => window.location.href = '/'} variant="hero" size="lg">
+                Return to Home
+              </Button>
+            </div>
+          </div>
+        </main>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background">
@@ -68,6 +255,12 @@ const SitterSignup = () => {
                     <CardTitle>Sitter Application</CardTitle>
                   </CardHeader>
                   <CardContent>
+                    {error && (
+                      <Alert variant="destructive" className="mb-6">
+                        <AlertCircle className="h-4 w-4" />
+                        <AlertDescription>{error}</AlertDescription>
+                      </Alert>
+                    )}
                     <form onSubmit={handleSubmit} className="space-y-6">
                       <div className="grid md:grid-cols-2 gap-4">
                         <div className="space-y-2">
@@ -94,15 +287,16 @@ const SitterSignup = () => {
 
                       <div className="grid md:grid-cols-2 gap-4">
                         <div className="space-y-2">
-                          <Label htmlFor="email">Email Address *</Label>
+                          <Label htmlFor="email">Email Address</Label>
                           <Input
                             id="email"
                             name="email"
                             type="email"
-                            value={formData.email}
-                            onChange={handleInputChange}
-                            required
+                            value={user?.email || ""}
+                            disabled
+                            className="bg-muted"
                           />
+                          <p className="text-xs text-muted-foreground">Email cannot be changed</p>
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="phone">Phone Number *</Label>
@@ -145,7 +339,7 @@ const SitterSignup = () => {
                       <div className="grid md:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor="grade">Grade/Year *</Label>
-                          <Select>
+                          <Select value={formData.grade} onValueChange={(value) => handleSelectChange("grade", value)}>
                             <SelectTrigger>
                               <SelectValue placeholder="Select your grade/year" />
                             </SelectTrigger>
@@ -224,20 +418,20 @@ const SitterSignup = () => {
                         />
                       </div>
 
-                      <div className="space-y-2">
-                        <Label htmlFor="transportation">Transportation</Label>
-                        <Select>
-                          <SelectTrigger>
-                            <SelectValue placeholder="How do you get around?" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="own-car">Own Car</SelectItem>
-                            <SelectItem value="parent-dropoff">Parent Drop-off</SelectItem>
-                            <SelectItem value="public-transport">Public Transportation</SelectItem>
-                            <SelectItem value="walking-biking">Walking/Biking</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="transportation">Transportation</Label>
+                          <Select value={formData.transportation} onValueChange={(value) => handleSelectChange("transportation", value)}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="How do you get around?" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="own-car">Own Car</SelectItem>
+                              <SelectItem value="parent-dropoff">Parent Drop-off</SelectItem>
+                              <SelectItem value="public-transport">Public Transportation</SelectItem>
+                              <SelectItem value="walking-biking">Walking/Biking</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
 
                       <div className="space-y-4">
                         <div className="flex items-center space-x-2">
@@ -279,8 +473,9 @@ const SitterSignup = () => {
                         variant="book" 
                         size="lg" 
                         className="w-full"
-                        disabled={!formData.agreeTerms || !formData.agreeBackground || !formData.over16}
+                        disabled={!formData.agreeTerms || !formData.agreeBackground || !formData.over16 || isLoading}
                       >
+                        {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         Submit Application
                       </Button>
                     </form>
