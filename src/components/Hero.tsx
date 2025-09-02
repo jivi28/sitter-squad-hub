@@ -79,7 +79,7 @@ const Hero = () => {
                 </Button>
               )}
               {!user && (
-                <Button variant="book" size="lg" className="text-lg px-8 py-6" onClick={() => window.location.href = '/sitter-signup'}>
+                <Button variant="book" size="lg" className="text-lg px-8 py-6" onClick={() => window.location.href = '/sitter-auth'}>
                   Become a Sitter
                 </Button>
               )}

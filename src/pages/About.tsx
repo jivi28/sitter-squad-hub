@@ -38,7 +38,7 @@ const About = () => {
               </p>
               <div className="flex justify-center space-x-4">
                 <Button variant="hero" size="lg" onClick={() => window.location.href = '/parent-signup'}>Join as Parent</Button>
-                <Button variant="book" size="lg" onClick={() => window.location.href = '/sitter-signup'}>Become a Sitter</Button>
+                <Button variant="book" size="lg" onClick={() => window.location.href = '/sitter-auth'}>Become a Sitter</Button>
               </div>
             </div>
           </div>
@@ -138,7 +138,7 @@ const About = () => {
               <Button variant="hero" size="lg" className="text-lg px-8 py-6" onClick={() => window.location.href = '/parent-signup'}>
                 Find a Sitter
               </Button>
-              <Button variant="book" size="lg" className="text-lg px-8 py-6" onClick={() => window.location.href = '/sitter-signup'}>
+              <Button variant="book" size="lg" className="text-lg px-8 py-6" onClick={() => window.location.href = '/sitter-auth'}>
                 Apply to be a Sitter
               </Button>
             </div>

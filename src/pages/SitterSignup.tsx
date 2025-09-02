@@ -53,9 +53,9 @@ const SitterSignup = () => {
           .from('sitters')
           .select('*')
           .eq('user_id', user.id)
-          .single();
+          .maybeSingle();
 
-        if (error && error.code !== 'PGRST116') { // PGRST116 means no rows found
+        if (error) {
           throw error;
         }
 
@@ -154,7 +154,7 @@ const SitterSignup = () => {
         .from('sitters')
         .select('id')
         .eq('user_id', user.id)
-        .single();
+        .maybeSingle();
 
       if (existing) {
         // Update existing profile
