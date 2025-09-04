@@ -64,9 +64,9 @@ const SitterSignup = () => {
           const urlParams = new URLSearchParams(window.location.search);
           const isExplicitAccess = urlParams.get('edit') === 'true';
 
-          if (data.status === 'approved' && !isExplicitAccess) {
-            // Redirect to main page if already approved and not explicit access
-            window.location.href = '/';
+          if (data.approved_at && !isExplicitAccess) {
+            // Redirect to dashboard if already approved and not explicit access
+            window.location.href = '/sitter-dashboard';
             return;
           }
 
@@ -87,7 +87,7 @@ const SitterSignup = () => {
             transportation: data.transportation || ""
           }));
 
-          if (data.status === 'approved') {
+          if (data.approved_at) {
             setSuccess(true);
           }
         }

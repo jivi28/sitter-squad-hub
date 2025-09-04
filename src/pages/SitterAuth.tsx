@@ -29,11 +29,24 @@ const SitterAuth = () => {
     confirmPassword: ""
   });
 
-  // Check if user is already logged in
+  // Check if user is already logged in and redirect accordingly
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
       if (session) {
-        window.location.href = '/sitter-signup';
+        // Check if user has an approved sitter profile
+        const { data: sitterData } = await supabase
+          .from('sitters')
+          .select('approved_at')
+          .eq('user_id', session.user.id)
+          .maybeSingle();
+
+        if (sitterData?.approved_at) {
+          // Approved sitter, redirect to dashboard
+          window.location.href = '/sitter-dashboard';
+        } else {
+          // Not approved or no profile, redirect to signup
+          window.location.href = '/sitter-signup';
+        }
       }
     });
   }, []);
@@ -52,11 +65,25 @@ const SitterAuth = () => {
       if (error) throw error;
 
       if (data.user) {
+        // Check if user has an approved sitter profile
+        const { data: sitterData } = await supabase
+          .from('sitters')
+          .select('approved_at')
+          .eq('user_id', data.user.id)
+          .maybeSingle();
+
         toast({
           title: "Success!",
           description: "You have been logged in successfully.",
         });
-        window.location.href = '/sitter-signup';
+
+        if (sitterData?.approved_at) {
+          // Approved sitter, redirect to dashboard
+          window.location.href = '/sitter-dashboard';
+        } else {
+          // Not approved or no profile, redirect to signup
+          window.location.href = '/sitter-signup';
+        }
       }
     } catch (error: any) {
       console.error('Login error:', error);

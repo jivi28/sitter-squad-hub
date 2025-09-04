@@ -9,6 +9,7 @@ import Auth from "./pages/Auth";
 import ParentSignup from "./pages/ParentSignup";
 import SitterSignup from "./pages/SitterSignup";
 import SitterAuth from "./pages/SitterAuth";
+import SitterDashboard from "./pages/SitterDashboard";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./hooks/useAuth";
 
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/parent-signup" element={<ParentSignup />} />
             <Route path="/sitter-signup" element={<SitterSignup />} />
             <Route path="/sitter-auth" element={<SitterAuth />} />
+            <Route path="/sitter-dashboard" element={<SitterDashboard />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>
