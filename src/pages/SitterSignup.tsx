@@ -165,25 +165,40 @@ const SitterSignup = () => {
 
         if (error) throw error;
         
-        toast({
-          title: "Application Updated!",
-          description: "Your sitter application has been updated successfully.",
-        });
-      } else {
-        // Create new profile
-        const { error } = await supabase
-          .from('sitters')
-          .insert([sitterData]);
+          toast({
+            title: "Profile Updated!",
+            description: "Your profile has been updated successfully.",
+          });
+          
+          // Check if this is an approved sitter editing their profile
+          const { data: currentProfile } = await supabase
+            .from('sitters')
+            .select('approved_at')
+            .eq('user_id', user.id)
+            .single();
+          
+          if (currentProfile?.approved_at) {
+            // Redirect approved sitters back to dashboard after edit
+            setTimeout(() => {
+              window.location.href = '/sitter-dashboard';
+            }, 1000);
+            return;
+          }
+        } else {
+          // Create new profile
+          const { error } = await supabase
+            .from('sitters')
+            .insert([sitterData]);
 
-        if (error) throw error;
-        
-        toast({
-          title: "Application Submitted!",
-          description: "Your sitter application has been submitted for review.",
-        });
-      }
+          if (error) throw error;
+          
+          toast({
+            title: "Application Submitted!",
+            description: "Your sitter application has been submitted for review.",
+          });
+        }
 
-      setSuccess(true);
+        setSuccess(true);
     } catch (error: any) {
       console.error('Error submitting sitter application:', error);
       setError(error.message || 'Failed to submit application');
