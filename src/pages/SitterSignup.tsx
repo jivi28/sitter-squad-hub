@@ -386,11 +386,11 @@ const SitterSignup = () => {
                             id="hourlyRate"
                             name="hourlyRate"
                             type="number"
-                            min="15"
+                            min="5"
                             max="30"
                             value={formData.hourlyRate}
                             onChange={handleInputChange}
-                            placeholder="$15-25/hour"
+                            placeholder="€5-25/hour"
                             required
                           />
                         </div>
@@ -514,7 +514,7 @@ const SitterSignup = () => {
                 <Card className="bg-gradient-secondary text-secondary-foreground">
                   <CardContent className="p-6 text-center">
                     <DollarSign className="w-12 h-12 mx-auto mb-4" />
-                    <h3 className="text-xl font-bold mb-2">Earn $15-25/hour</h3>
+                    <h3 className="text-xl font-bold mb-2">Earn €5-25/hour</h3>
                     <p className="text-secondary-foreground/90 text-sm">
                       Flexible schedule that works with your studies
                     </p>

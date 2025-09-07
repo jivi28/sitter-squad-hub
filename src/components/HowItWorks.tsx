@@ -64,7 +64,7 @@ const HowItWorks = () => {
             </h3>
             <div className="grid md:grid-cols-3 gap-8 mt-8">
               <div className="text-center">
-                <div className="text-3xl font-bold text-primary mb-2">$15-25/hr</div>
+                <div className="text-3xl font-bold text-primary mb-2">€5-25/hr</div>
                 <p className="text-muted-foreground">Affordable Rates</p>
               </div>
               <div className="text-center">
