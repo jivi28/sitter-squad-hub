@@ -121,7 +121,7 @@ const SitterDashboard = () => {
                   <DollarSign className="h-5 w-5 text-primary" />
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Hourly Rate</p>
-                    <p className="text-2xl font-bold">${sitterProfile.hourly_rate}</p>
+                    <p className="text-2xl font-bold">€{sitterProfile.hourly_rate}</p>
                   </div>
                 </div>
               </CardContent>
@@ -201,7 +201,7 @@ const SitterDashboard = () => {
                     </div>
                     <div>
                       <p className="font-medium">Hourly Rate</p>
-                      <p className="text-muted-foreground">${sitterProfile.hourly_rate}/hour</p>
+                      <p className="text-muted-foreground">€{sitterProfile.hourly_rate}/hour</p>
                     </div>
                     <div>
                       <p className="font-medium">Status</p>
