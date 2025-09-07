@@ -98,7 +98,8 @@ const SitterSignup = () => {
             transportation: data.transportation || ""
           }));
 
-          if (data.approved_at) {
+          // Only show success message for approved sitters if they're not editing
+          if (data.approved_at && !isExplicitAccess) {
             setSuccess(true);
           }
         }
