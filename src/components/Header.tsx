@@ -1,11 +1,65 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, LogOut } from "lucide-react";
 import { useAuth } from "@/hooks/useAuth";
+import { supabase } from "@/integrations/supabase/client";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [userType, setUserType] = useState<'parent' | 'sitter' | null>(null);
   const { user, signOut } = useAuth();
+
+  // Determine if user is a sitter or parent
+  useEffect(() => {
+    if (!user) {
+      setUserType(null);
+      return;
+    }
+
+    const checkUserType = async () => {
+      try {
+        // Check if user has sitter profile
+        const { data: sitterData } = await supabase
+          .from('sitters')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (sitterData) {
+          setUserType('sitter');
+          return;
+        }
+
+        // Check if user has parent profile  
+        const { data: parentData } = await supabase
+          .from('profiles')
+          .select('id')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (parentData) {
+          setUserType('parent');
+          return;
+        }
+
+        // Default to parent if no profile found
+        setUserType('parent');
+      } catch (error) {
+        console.error('Error checking user type:', error);
+        setUserType('parent');
+      }
+    };
+
+    checkUserType();
+  }, [user]);
+
+  const handleMyProfileClick = () => {
+    if (userType === 'sitter') {
+      window.location.href = '/sitter-signup?edit=true';
+    } else {
+      window.location.href = '/parent-signup?edit=true';
+    }
+  };
 
   return (
     <header className="bg-card border-b border-border shadow-card sticky top-0 z-50">
@@ -27,7 +81,7 @@ const Header = () => {
             </a>
             {user ? (
               <>
-                <Button variant="outline" size="sm" onClick={() => window.location.href = '/parent-signup?edit=true'}>
+                <Button variant="outline" size="sm" onClick={handleMyProfileClick}>
                   My Profile
                 </Button>
                 <Button variant="outline" size="sm" onClick={signOut}>
@@ -66,7 +120,7 @@ const Header = () => {
               </a>
               {user ? (
                 <>
-                  <Button variant="outline" size="sm" className="self-start" onClick={() => window.location.href = '/parent-signup?edit=true'}>
+                  <Button variant="outline" size="sm" className="self-start" onClick={handleMyProfileClick}>
                     My Profile
                   </Button>
                   <Button variant="outline" size="sm" className="self-start" onClick={signOut}>
