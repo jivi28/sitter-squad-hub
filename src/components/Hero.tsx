@@ -80,7 +80,7 @@ const Hero = () => {
               )}
               {!user && (
                 <Button variant="book" size="lg" className="text-lg px-8 py-6" onClick={() => window.location.href = '/sitter-auth'}>
-                  Sitter Login
+                  Become a Sitter
                 </Button>
               )}
             </div>
@@ -100,7 +100,7 @@ const Hero = () => {
               </div>
               <div className="flex items-center space-x-2">
                 <Users className="w-5 h-5 text-primary" />
-                <span className="text-muted-foreground">50+ Families</span>
+                <span className="text-muted-foreground">500+ Families</span>
               </div>
             </div>
           </div>
