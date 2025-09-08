@@ -22,7 +22,7 @@ const Index = () => {
       
       try {
         const { data, error } = await supabase
-          .from('profiles')
+          .from('Parent profiles')
           .select('*')
           .eq('user_id', user.id)
           .maybeSingle();

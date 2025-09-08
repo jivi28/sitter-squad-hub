@@ -20,7 +20,7 @@ const Header = () => {
       try {
         // Check if user has sitter profile
         const { data: sitterData } = await supabase
-          .from('sitters')
+          .from('Sitter profiles')
           .select('id')
           .eq('user_id', user.id)
           .maybeSingle();
@@ -32,7 +32,7 @@ const Header = () => {
 
         // Check if user has parent profile  
         const { data: parentData } = await supabase
-          .from('profiles')
+          .from('Parent profiles')
           .select('id')
           .eq('user_id', user.id)
           .maybeSingle();

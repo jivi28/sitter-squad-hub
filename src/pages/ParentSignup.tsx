@@ -48,7 +48,7 @@ const ParentSignup = () => {
     const checkProfile = async () => {
       try {
         const { data, error } = await supabase
-          .from('profiles')
+          .from('Parent profiles')
           .select('*')
           .eq('user_id', user.id)
           .maybeSingle();
@@ -138,7 +138,7 @@ const ParentSignup = () => {
       if (hasProfile) {
         // Update existing profile
         const { error } = await supabase
-          .from('profiles')
+          .from('Parent profiles')
           .update(profileData)
           .eq('user_id', user.id);
 
@@ -151,7 +151,7 @@ const ParentSignup = () => {
       } else {
         // Create new profile
         const { error } = await supabase
-          .from('profiles')
+          .from('Parent profiles')
           .insert(profileData);
 
         if (error) throw error;

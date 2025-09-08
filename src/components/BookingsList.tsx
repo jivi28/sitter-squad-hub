@@ -42,7 +42,7 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
     try {
       // Get sitter info first to get their name
       const { data: sitterData, error: sitterError } = await supabase
-        .from('sitters')
+        .from('Sitter profiles')
         .select('first_name, last_name')
         .eq('id', sitterId)
         .single();

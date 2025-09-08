@@ -35,7 +35,7 @@ const SitterAuth = () => {
       if (session) {
         // Check if user has an approved sitter profile
         const { data: sitterData } = await supabase
-          .from('sitters')
+          .from('Sitter profiles')
           .select('approved_at')
           .eq('user_id', session.user.id)
           .maybeSingle();
@@ -67,7 +67,7 @@ const SitterAuth = () => {
       if (data.user) {
         // Check if user has an approved sitter profile
         const { data: sitterData } = await supabase
-          .from('sitters')
+          .from('Sitter profiles')
           .select('approved_at')
           .eq('user_id', data.user.id)
           .maybeSingle();
