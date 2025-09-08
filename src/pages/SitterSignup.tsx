@@ -54,7 +54,7 @@ const SitterSignup = () => {
       try {
         console.log('SitterSignup: Checking sitter profile for user:', user.id);
         const { data, error } = await supabase
-          .from('Sitter profiles')
+          .from('sitters')
           .select('*')
           .eq('user_id', user.id)
           .maybeSingle();
@@ -163,7 +163,7 @@ const SitterSignup = () => {
 
       // Check if profile already exists
       const { data: existing } = await supabase
-        .from('Sitter profiles')
+        .from('sitters')
         .select('id')
         .eq('user_id', user.id)
         .maybeSingle();
@@ -171,7 +171,7 @@ const SitterSignup = () => {
       if (existing) {
         // Update existing profile
         const { error } = await supabase
-          .from('Sitter profiles')
+          .from('sitters')
           .update(sitterData)
           .eq('user_id', user.id);
 
@@ -184,7 +184,7 @@ const SitterSignup = () => {
           
           // Check if this is an approved sitter editing their profile
           const { data: currentProfile } = await supabase
-            .from('Sitter profiles')
+            .from('sitters')
             .select('approved_at')
             .eq('user_id', user.id)
             .single();
@@ -199,7 +199,7 @@ const SitterSignup = () => {
         } else {
           // Create new profile
           const { error } = await supabase
-            .from('Sitter profiles')
+            .from('sitters')
             .insert([sitterData]);
 
           if (error) throw error;

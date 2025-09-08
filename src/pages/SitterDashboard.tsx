@@ -42,7 +42,7 @@ const SitterDashboard = () => {
 
     try {
       const { data, error } = await supabase
-        .from('Sitter profiles')
+        .from('sitters')
         .select('*')
         .eq('user_id', user.id)
         .maybeSingle();

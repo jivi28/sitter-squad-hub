@@ -76,7 +76,7 @@ const AvailabilityManager = ({ sitterId, currentAvailability, onAvailabilityUpda
     setIsLoading(true);
     try {
       const { error } = await supabase
-        .from('Sitter profiles')
+        .from('sitters')
         .update({
           availability: availability as any
         })
