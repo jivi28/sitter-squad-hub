@@ -65,14 +65,43 @@ const BookingSystem = () => {
     if (!requestedDate || !startTime || !endTime) return [];
     
     const requestedDay = getDayOfWeek(requestedDate);
+    console.log('Filtering sitters:', {
+      requestedDate,
+      requestedDay,
+      startTime,
+      endTime,
+      sittersCount: sitters?.length || 0,
+      sitters: sitters?.map(s => ({
+        name: `${s.first_name} ${s.last_name}`,
+        availability: s.availability
+      }))
+    });
     
     return sitters.filter(sitter => {
-      if (!sitter.availability || !Array.isArray(sitter.availability)) return false;
+      if (!sitter.availability || !Array.isArray(sitter.availability)) {
+        console.log('Sitter filtered out - no availability:', `${sitter.first_name} ${sitter.last_name}`);
+        return false;
+      }
       
-      return sitter.availability.some((slot: AvailabilitySlot) => {
-        return slot.day === requestedDay && 
-               timesOverlap(startTime, endTime, slot.startTime, slot.endTime);
+      const hasMatchingSlot = sitter.availability.some((slot: AvailabilitySlot) => {
+        const dayMatch = slot.day === requestedDay;
+        const timeMatch = timesOverlap(startTime, endTime, slot.startTime, slot.endTime);
+        console.log('Checking slot:', {
+          sitterName: `${sitter.first_name} ${sitter.last_name}`,
+          slot,
+          requestedDay,
+          dayMatch,
+          timeMatch,
+          timesOverlapCheck: `${startTime} < ${slot.endTime} && ${endTime} > ${slot.startTime}`
+        });
+        return dayMatch && timeMatch;
       });
+      
+      if (!hasMatchingSlot) {
+        console.log('Sitter filtered out - no matching availability:', `${sitter.first_name} ${sitter.last_name}`);
+      }
+      
+      return hasMatchingSlot;
     });
   };
 
