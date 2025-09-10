@@ -17,11 +17,29 @@ interface BookingDetails {
   notes: string;
 }
 
+interface AvailabilitySlot {
+  day: string;
+  startTime: string;
+  endTime: string;
+}
+
+interface Sitter {
+  id: string;
+  first_name: string;
+  last_name: string;
+  hourly_rate: number;
+  experience: string;
+  special_skills: string;
+  availability: any; // Supabase Json type - will be AvailabilitySlot[] in runtime
+}
+
 const BookingSystem = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [selectedSitter, setSelectedSitter] = useState<number | null>(null);
+  const [selectedSitter, setSelectedSitter] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [availableSitters, setAvailableSitters] = useState<Sitter[]>([]);
+  const [loadingSitters, setLoadingSitters] = useState(false);
   const [bookingDetails, setBookingDetails] = useState<BookingDetails>({
     date: "",
     startTime: "",
@@ -30,47 +48,74 @@ const BookingSystem = () => {
     notes: ""
   });
 
-  const sitters = [
-    {
-      id: 1,
-      name: "Emma Johnson",
-      age: 19,
-      school: "State University",
-      rating: 4.9,
-      reviews: 24,
-      hourlyRate: 18,
-      experience: "3 years",
-      specialties: ["Infants", "Homework Help"],
-      avatar: "👩‍🎓",
-      availability: "Weekends & Evenings"
-    },
-    {
-      id: 2,
-      name: "Michael Chen",
-      age: 20,
-      school: "Community College",
-      rating: 4.8,
-      reviews: 18,
-      hourlyRate: 16,
-      experience: "2 years",
-      specialties: ["Toddlers", "Activities"],
-      avatar: "👨‍🎓",
-      availability: "Flexible Schedule"
-    },
-    {
-      id: 3,
-      name: "Sarah Williams",
-      age: 21,
-      school: "Local High School",
-      rating: 5.0,
-      reviews: 32,
-      hourlyRate: 20,
-      experience: "4 years",
-      specialties: ["Multiple Children", "Special Needs"],
-      avatar: "👩‍🎓",
-      availability: "After School"
-    }
-  ];
+  // Get day of week from date
+  const getDayOfWeek = (dateString: string) => {
+    const date = new Date(dateString);
+    const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+    return days[date.getDay()];
+  };
+
+  // Check if times overlap
+  const timesOverlap = (start1: string, end1: string, start2: string, end2: string) => {
+    return start1 < end2 && end1 > start2;
+  };
+
+  // Filter sitters by availability
+  const filterSittersByAvailability = (sitters: any[], requestedDate: string, startTime: string, endTime: string) => {
+    if (!requestedDate || !startTime || !endTime) return [];
+    
+    const requestedDay = getDayOfWeek(requestedDate);
+    
+    return sitters.filter(sitter => {
+      if (!sitter.availability || !Array.isArray(sitter.availability)) return false;
+      
+      return sitter.availability.some((slot: AvailabilitySlot) => {
+        return slot.day === requestedDay && 
+               timesOverlap(startTime, endTime, slot.startTime, slot.endTime);
+      });
+    });
+  };
+
+  // Fetch available sitters when booking details change
+  useEffect(() => {
+    const fetchAvailableSitters = async () => {
+      if (!bookingDetails.date || !bookingDetails.startTime || !bookingDetails.endTime) {
+        setAvailableSitters([]);
+        return;
+      }
+
+      setLoadingSitters(true);
+      try {
+        const { data: sitters, error } = await supabase
+          .from('sitters')
+          .select('*')
+          .eq('status', 'approved');
+
+        if (error) throw error;
+
+        const filteredSitters = filterSittersByAvailability(
+          sitters || [],
+          bookingDetails.date,
+          bookingDetails.startTime,
+          bookingDetails.endTime
+        );
+
+        setAvailableSitters(filteredSitters);
+      } catch (error) {
+        console.error('Error fetching sitters:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load available sitters. Please try again.",
+          variant: "destructive"
+        });
+        setAvailableSitters([]);
+      } finally {
+        setLoadingSitters(false);
+      }
+    };
+
+    fetchAvailableSitters();
+  }, [bookingDetails.date, bookingDetails.startTime, bookingDetails.endTime]);
 
   const calculateHours = () => {
     if (!bookingDetails.startTime || !bookingDetails.endTime) return 0;
@@ -105,20 +150,20 @@ const BookingSystem = () => {
       return;
     }
 
-    const selectedSitterData = sitters.find(s => s.id === selectedSitter);
+    const selectedSitterData = availableSitters.find(s => s.id === selectedSitter);
     if (!selectedSitterData) return;
 
     setIsLoading(true);
 
     try {
-      const totalCost = selectedSitterData.hourlyRate * estimatedHours;
+      const totalCost = selectedSitterData.hourly_rate * estimatedHours;
 
       const { error } = await supabase
         .from('bookings')
         .insert({
           user_id: user.id,
-          sitter_name: selectedSitterData.name,
-          sitter_hourly_rate: selectedSitterData.hourlyRate,
+          sitter_name: `${selectedSitterData.first_name} ${selectedSitterData.last_name}`,
+          sitter_hourly_rate: selectedSitterData.hourly_rate,
           booking_date: bookingDetails.date,
           start_time: bookingDetails.startTime,
           end_time: bookingDetails.endTime,
@@ -132,7 +177,7 @@ const BookingSystem = () => {
 
       toast({
         title: "Booking submitted!",
-        description: `Your booking with ${selectedSitterData.name} has been submitted successfully. You'll receive a confirmation email shortly.`,
+        description: `Your booking with ${selectedSitterData.first_name} ${selectedSitterData.last_name} has been submitted successfully. You'll receive a confirmation email shortly.`,
       });
 
       // Reset form
@@ -159,6 +204,7 @@ const BookingSystem = () => {
 
   const estimatedHours = calculateHours();
   const showSitters = isBookingComplete();
+  const hasSitters = availableSitters.length > 0;
 
   return (
     <section id="booking-system" className="py-20 bg-gradient-soft">
@@ -168,84 +214,107 @@ const BookingSystem = () => {
             Book a Sitter
           </h2>
           <p className="text-xl text-muted-foreground">
-            {showSitters ? "Choose from our verified student babysitters" : "Please fill in your booking details to see available sitters"}
+            {showSitters ? 
+              (loadingSitters ? "Finding available sitters..." : 
+               hasSitters ? "Choose from our verified student babysitters" : "No sitters available for your selected time") 
+              : "Please fill in your booking details to see available sitters"}
           </p>
         </div>
 
-        <div className={`grid gap-8 max-w-6xl mx-auto ${showSitters ? 'lg:grid-cols-3' : 'justify-center'}`}>
+        <div className={`grid gap-8 max-w-6xl mx-auto ${showSitters && hasSitters ? 'lg:grid-cols-3' : 'justify-center'}`}>
           {showSitters && (
             <div className="lg:col-span-2 space-y-6">
               <div className="text-center mb-6">
-                <h3 className="text-2xl font-semibold text-foreground mb-2">Available Sitters</h3>
-                <p className="text-muted-foreground">Select a sitter for your booking</p>
+                <h3 className="text-2xl font-semibold text-foreground mb-2">
+                  {loadingSitters ? "Finding Sitters..." : "Available Sitters"}
+                </h3>
+                <p className="text-muted-foreground">
+                  {loadingSitters ? "Please wait while we find sitters available for your time slot" : 
+                   hasSitters ? "Select a sitter for your booking" : "Try adjusting your date or time to find available sitters"}
+                </p>
               </div>
-              <div className="grid gap-6">
-                {sitters.map((sitter) => (
-                  <Card 
-                    key={sitter.id} 
-                    className={`cursor-pointer transition-all duration-300 hover:shadow-glow ${
-                      selectedSitter === sitter.id ? 'ring-2 ring-primary shadow-glow' : ''
-                    }`}
-                    onClick={() => setSelectedSitter(sitter.id)}
-                  >
-                    <CardContent className="p-6">
-                      <div className="flex items-start justify-between">
-                        <div className="flex items-start space-x-4">
-                          <div className="text-4xl">{sitter.avatar}</div>
-                          <div className="flex-1">
-                            <div className="flex items-center space-x-2 mb-2">
-                              <h3 className="text-xl font-semibold text-foreground">{sitter.name}</h3>
-                              <div className="flex items-center space-x-1">
-                                <Star className="w-4 h-4 fill-secondary text-secondary" />
-                                <span className="text-sm font-medium">{sitter.rating}</span>
-                                <span className="text-sm text-muted-foreground">({sitter.reviews} reviews)</span>
+              {loadingSitters ? (
+                <div className="flex justify-center items-center py-12">
+                  <Loader2 className="h-8 w-8 animate-spin" />
+                </div>
+              ) : hasSitters ? (
+                <div className="grid gap-6">
+                  {availableSitters.map((sitter) => (
+                    <Card 
+                      key={sitter.id} 
+                      className={`cursor-pointer transition-all duration-300 hover:shadow-glow ${
+                        selectedSitter === sitter.id ? 'ring-2 ring-primary shadow-glow' : ''
+                      }`}
+                      onClick={() => setSelectedSitter(sitter.id)}
+                    >
+                      <CardContent className="p-6">
+                        <div className="flex items-start justify-between">
+                          <div className="flex items-start space-x-4">
+                            <div className="text-4xl">👩‍🎓</div>
+                            <div className="flex-1">
+                              <div className="flex items-center space-x-2 mb-2">
+                                <h3 className="text-xl font-semibold text-foreground">
+                                  {sitter.first_name} {sitter.last_name}
+                                </h3>
+                                <div className="flex items-center space-x-1">
+                                  <Star className="w-4 h-4 fill-secondary text-secondary" />
+                                  <span className="text-sm font-medium">5.0</span>
+                                  <span className="text-sm text-muted-foreground">(New)</span>
+                                </div>
                               </div>
-                            </div>
-                            <p className="text-muted-foreground mb-2">
-                              {sitter.age} years old • {sitter.school} • {sitter.experience} experience
-                            </p>
-                            <div className="flex flex-wrap gap-2 mb-3">
-                              {sitter.specialties.map((specialty, index) => (
-                                <span 
-                                  key={index}
-                                  className="px-2 py-1 bg-accent text-accent-foreground text-xs rounded-full"
-                                >
-                                  {specialty}
-                                </span>
-                              ))}
-                            </div>
-                            <div className="flex items-center space-x-4 text-sm text-muted-foreground">
-                              <div className="flex items-center space-x-1">
-                                <Clock className="w-4 h-4" />
-                                <span>{sitter.availability}</span>
-                              </div>
-                              <div className="flex items-center space-x-1">
-                                <MapPin className="w-4 h-4" />
-                                <span>Within 5 miles</span>
+                              <p className="text-muted-foreground mb-2">
+                                {sitter.experience} experience
+                              </p>
+                              {sitter.special_skills && (
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                  {sitter.special_skills.split(',').map((skill, index) => (
+                                    <span 
+                                      key={index}
+                                      className="px-2 py-1 bg-accent text-accent-foreground text-xs rounded-full"
+                                    >
+                                      {skill.trim()}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              <div className="flex items-center space-x-4 text-sm text-muted-foreground">
+                                <div className="flex items-center space-x-1">
+                                  <Clock className="w-4 h-4" />
+                                  <span>Available for your time</span>
+                                </div>
+                                <div className="flex items-center space-x-1">
+                                  <MapPin className="w-4 h-4" />
+                                  <span>Local area</span>
+                                </div>
                               </div>
                             </div>
                           </div>
+                          <div className="text-right">
+                            <div className="text-2xl font-bold text-primary">${sitter.hourly_rate}</div>
+                            <div className="text-sm text-muted-foreground">per hour</div>
+                            <Button 
+                              variant={selectedSitter === sitter.id ? "default" : "outline"} 
+                              size="sm" 
+                              className="mt-2"
+                            >
+                              {selectedSitter === sitter.id ? "Selected" : "Select"}
+                            </Button>
+                          </div>
                         </div>
-                        <div className="text-right">
-                          <div className="text-2xl font-bold text-primary">${sitter.hourlyRate}</div>
-                          <div className="text-sm text-muted-foreground">per hour</div>
-                          <Button 
-                            variant={selectedSitter === sitter.id ? "default" : "outline"} 
-                            size="sm" 
-                            className="mt-2"
-                          >
-                            {selectedSitter === sitter.id ? "Selected" : "Select"}
-                          </Button>
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))}
-              </div>
+                      </CardContent>
+                    </Card>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-12">
+                  <p className="text-muted-foreground">No sitters are available for your selected time slot.</p>
+                  <p className="text-sm text-muted-foreground mt-2">Try changing your date or time to find available sitters.</p>
+                </div>
+              )}
             </div>
           )}
 
-          <div className={showSitters ? "lg:col-span-1" : "max-w-md mx-auto"}>
+          <div className={showSitters && hasSitters ? "lg:col-span-1" : "max-w-md mx-auto"}>
             <Card className="sticky top-24">
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
@@ -311,7 +380,7 @@ const BookingSystem = () => {
                   <div className="bg-muted p-4 rounded-lg">
                     <div className="flex justify-between text-sm mb-2">
                       <span>Hourly Rate:</span>
-                      <span>${sitters.find(s => s.id === selectedSitter)?.hourlyRate}/hr</span>
+                      <span>${availableSitters.find(s => s.id === selectedSitter)?.hourly_rate}/hr</span>
                     </div>
                     <div className="flex justify-between text-sm mb-2">
                       <span>Estimated Hours:</span>
@@ -319,7 +388,7 @@ const BookingSystem = () => {
                     </div>
                     <div className="flex justify-between font-semibold text-lg border-t border-border pt-2">
                       <span>Total:</span>
-                      <span>${((sitters.find(s => s.id === selectedSitter)?.hourlyRate || 0) * estimatedHours).toFixed(2)}</span>
+                      <span>${((availableSitters.find(s => s.id === selectedSitter)?.hourly_rate || 0) * estimatedHours).toFixed(2)}</span>
                     </div>
                   </div>
                 )}
