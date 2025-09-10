@@ -107,11 +107,20 @@ const BookingSystem = () => {
 
   // Fetch available sitters when booking details change
   useEffect(() => {
+    console.log('useEffect triggered with booking details:', bookingDetails);
+    
     const fetchAvailableSitters = async () => {
       if (!bookingDetails.date || !bookingDetails.startTime || !bookingDetails.endTime) {
+        console.log('Missing booking details, clearing sitters');
         setAvailableSitters([]);
         return;
       }
+
+      console.log('Fetching sitters for:', {
+        date: bookingDetails.date,
+        startTime: bookingDetails.startTime,
+        endTime: bookingDetails.endTime
+      });
 
       setLoadingSitters(true);
       try {
@@ -119,6 +128,8 @@ const BookingSystem = () => {
           .from('sitters')
           .select('*')
           .eq('status', 'approved');
+
+        console.log('Supabase response:', { sitters, error });
 
         if (error) throw error;
 
@@ -129,6 +140,7 @@ const BookingSystem = () => {
           bookingDetails.endTime
         );
 
+        console.log('Filtered sitters result:', filteredSitters);
         setAvailableSitters(filteredSitters);
       } catch (error) {
         console.error('Error fetching sitters:', error);
