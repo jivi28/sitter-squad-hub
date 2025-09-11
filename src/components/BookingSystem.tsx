@@ -48,9 +48,10 @@ const BookingSystem = () => {
     notes: ""
   });
 
-  // Get day of week from date
+  // Get day of week from date (parse YYYY-MM-DD as local date to avoid TZ issues)
   const getDayOfWeek = (dateString: string) => {
-    const date = new Date(dateString);
+    const [y, m, d] = dateString.split('-').map(Number);
+    const date = new Date(y, (m || 1) - 1, d || 1);
     const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
     return days[date.getDay()];
   };
@@ -127,7 +128,7 @@ const BookingSystem = () => {
         const { data: sitters, error } = await supabase
           .from('sitters')
           .select('*')
-          .eq('status', 'approved');
+          .or('status.eq.approved,approved_at.not.is.null');
 
         console.log('Supabase response:', { sitters, error });
 
