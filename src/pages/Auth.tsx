@@ -99,10 +99,10 @@ const Auth = () => {
       if (data.user) {
         toast({
           title: "Account created!",
-          description: "Please check your email to verify your account, then complete your profile.",
+          description: "Please check your email to verify your account before booking sitters. You can start browsing available sitters now!",
         });
-        // Redirect to parent signup form to complete profile
-        window.location.href = '/parent-signup';
+        // Redirect to homepage where they can access their account
+        window.location.href = '/';
       }
     } catch (error: any) {
       console.error('Signup error:', error);

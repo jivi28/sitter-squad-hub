@@ -126,7 +126,7 @@ const SitterAuth = () => {
       if (data.user) {
         toast({
           title: "Account created!",
-          description: "Please check your email to verify your account, then complete your sitter application.",
+          description: "Please check your email to verify your account, then complete your sitter application to start earning.",
         });
         // Redirect to sitter signup form to complete profile
         window.location.href = '/sitter-signup';
