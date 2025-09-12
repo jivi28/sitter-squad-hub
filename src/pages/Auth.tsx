@@ -84,7 +84,7 @@ const Auth = () => {
     }
 
     try {
-      const redirectUrl = `${window.location.origin}/parent-signup`;
+      const redirectUrl = `${window.location.origin}/verify-email?type=parent`;
       
       const { data, error } = await supabase.auth.signUp({
         email: signupData.email,
@@ -101,10 +101,8 @@ const Auth = () => {
           title: "Account created!",
           description: "Please check your email to verify your account before booking sitters. You can start browsing available sitters now!",
         });
-        // Wait a moment for the session to be established, then redirect to homepage
-        setTimeout(() => {
-          window.location.href = '/';
-        }, 1000);
+        // Redirect to email verification page
+        window.location.href = '/verify-email?type=parent';
       }
     } catch (error: any) {
       console.error('Signup error:', error);

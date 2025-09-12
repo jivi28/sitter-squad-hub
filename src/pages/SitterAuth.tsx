@@ -111,7 +111,7 @@ const SitterAuth = () => {
     }
 
     try {
-      const redirectUrl = `${window.location.origin}/sitter-signup`;
+      const redirectUrl = `${window.location.origin}/verify-email?type=sitter`;
       
       const { data, error } = await supabase.auth.signUp({
         email: signupData.email,
@@ -129,10 +129,8 @@ const SitterAuth = () => {
           description: "Please check your email to verify your account, then complete your sitter application to start earning.",
         });
         
-        // Wait a moment for the session to be established, then redirect
-        setTimeout(() => {
-          window.location.href = '/sitter-signup';
-        }, 1000);
+        // Redirect to email verification page
+        window.location.href = '/verify-email?type=sitter';
       }
     } catch (error: any) {
       console.error('Signup error:', error);
