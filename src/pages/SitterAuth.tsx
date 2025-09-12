@@ -128,8 +128,11 @@ const SitterAuth = () => {
           title: "Account created!",
           description: "Please check your email to verify your account, then complete your sitter application to start earning.",
         });
-        // Redirect to sitter signup form to complete profile
-        window.location.href = '/sitter-signup';
+        
+        // Wait a moment for the session to be established, then redirect
+        setTimeout(() => {
+          window.location.href = '/sitter-signup';
+        }, 1000);
       }
     } catch (error: any) {
       console.error('Signup error:', error);
