@@ -111,10 +111,13 @@ const SitterAuth = () => {
     }
 
     try {
-      const redirectUrl = `${window.location.origin}/verify-email?type=sitter`;
+      const email = signupData.email;
+      // Persist email for verify page
+      try { localStorage.setItem('pending_signup_email', email); } catch {}
+      const redirectUrl = `${window.location.origin}/verify-email?type=sitter&email=${encodeURIComponent(email)}`;
       
       const { data, error } = await supabase.auth.signUp({
-        email: signupData.email,
+        email,
         password: signupData.password,
         options: {
           emailRedirectTo: redirectUrl
@@ -129,8 +132,8 @@ const SitterAuth = () => {
           description: "Please check your email to verify your account, then complete your sitter application to start earning.",
         });
         
-        // Redirect to email verification page
-        window.location.href = '/verify-email?type=sitter';
+        // Redirect to email verification page (include email)
+        window.location.href = `/verify-email?type=sitter&email=${encodeURIComponent(signupData.email)}`;
       }
     } catch (error: any) {
       console.error('Signup error:', error);

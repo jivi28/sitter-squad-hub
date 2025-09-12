@@ -14,11 +14,23 @@ const VerifyEmail = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    // Get the current user's email
+    // Try to prefill email from URL or localStorage first
+    const params = new URLSearchParams(window.location.search);
+    const urlEmail = params.get('email');
+    if (urlEmail) {
+      setUserEmail(urlEmail);
+    } else {
+      try {
+        const stored = localStorage.getItem('pending_signup_email');
+        if (stored) setUserEmail(stored);
+      } catch {}
+    }
+
+    // Get the current user's email as a final fallback (only works if session exists)
     const getCurrentUser = async () => {
       const { data: { user } } = await supabase.auth.getUser();
       if (user?.email) {
-        setUserEmail(user.email);
+        setUserEmail(prev => prev || user.email);
       }
     };
     getCurrentUser();
@@ -42,38 +54,62 @@ const VerifyEmail = () => {
   }, []);
 
   const handleResendEmail = async () => {
-    if (!userEmail) {
-      toast({
-        title: "Error",
-        description: "No email address found. Please try signing up again.",
-        variant: "destructive",
-      });
-      return;
-    }
-
     setIsResending(true);
 
     try {
-      const urlParams = new URLSearchParams(window.location.search);
-      const isParent = urlParams.get('type') === 'parent';
+      // Determine email to use
+      let email = userEmail;
+      const params = new URLSearchParams(window.location.search);
+      if (!email) {
+        const fromParams = params.get('email');
+        if (fromParams) email = fromParams;
+      }
+      if (!email) {
+        try {
+          const stored = localStorage.getItem('pending_signup_email');
+          if (stored) email = stored;
+        } catch {}
+      }
+
+      if (!email) {
+        toast({
+          title: "Error",
+          description: "No email address found. Please try signing up again.",
+          variant: "destructive",
+        });
+        return;
+      }
+
+      const isParent = params.get('type') === 'parent';
       const redirectUrl = isParent 
-        ? `${window.location.origin}/verify-email?type=parent`
-        : `${window.location.origin}/verify-email?type=sitter`;
+        ? `${window.location.origin}/verify-email?type=parent&email=${encodeURIComponent(email)}`
+        : `${window.location.origin}/verify-email?type=sitter&email=${encodeURIComponent(email)}`;
 
       const { error } = await supabase.auth.resend({
         type: 'signup',
-        email: userEmail,
+        email,
         options: {
           emailRedirectTo: redirectUrl
         }
       });
 
-      if (error) throw error;
-
-      toast({
-        title: "Email sent!",
-        description: "We've sent another verification email to your inbox.",
-      });
+      if (error) {
+        const message = String(error.message || '').toLowerCase();
+        if (message.includes('already') && message.includes('confirm')) {
+          toast({
+            title: "Email already verified",
+            description: "This email is already registered. Please log in instead.",
+            variant: "destructive",
+          });
+        } else {
+          throw error;
+        }
+      } else {
+        toast({
+          title: "Email sent!",
+          description: "We've sent another verification email to your inbox.",
+        });
+      }
     } catch (error: any) {
       console.error('Resend error:', error);
       toast({
@@ -90,13 +126,10 @@ const VerifyEmail = () => {
     setIsChecking(true);
     
     try {
-      // Refresh the session to check if email is verified
-      const { data: { session }, error } = await supabase.auth.refreshSession();
+      // Check current session for email confirmation
+      const { data: { session } } = await supabase.auth.getSession();
       
-      if (error) throw error;
-      
-      if (session?.user.email_confirmed_at) {
-        // Email is verified, redirect appropriately
+      if (session?.user?.email_confirmed_at) {
         const urlParams = new URLSearchParams(window.location.search);
         const isParent = urlParams.get('type') === 'parent';
         
@@ -111,7 +144,7 @@ const VerifyEmail = () => {
           } else {
             window.location.href = '/sitter-signup';
           }
-        }, 1000);
+        }, 800);
       } else {
         toast({
           title: "Not verified yet",
