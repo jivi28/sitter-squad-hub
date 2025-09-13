@@ -371,12 +371,11 @@ const SitterSignup = () => {
                               <SelectValue placeholder="Select your grade/year" />
                             </SelectTrigger>
                             <SelectContent>
-                              <SelectItem value="high-school-senior">High School Senior</SelectItem>
-                              <SelectItem value="college-freshman">College Freshman</SelectItem>
-                              <SelectItem value="college-sophomore">College Sophomore</SelectItem>
-                              <SelectItem value="college-junior">College Junior</SelectItem>
-                              <SelectItem value="college-senior">College Senior</SelectItem>
-                              <SelectItem value="graduate">Graduate Student</SelectItem>
+                              <SelectItem value="grade-9">Grade 9</SelectItem>
+                              <SelectItem value="grade-10">Grade 10</SelectItem>
+                              <SelectItem value="grade-11">Grade 11</SelectItem>
+                              <SelectItem value="grade-12">Grade 12</SelectItem>
+                              <SelectItem value="university-student">University student</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>
