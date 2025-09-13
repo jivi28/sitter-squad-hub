@@ -18,6 +18,7 @@ const SitterSignup = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
+  const [isEditMode, setIsEditMode] = useState(false);
 
   const [formData, setFormData] = useState({
     firstName: "",
@@ -67,6 +68,9 @@ const SitterSignup = () => {
         console.log('SitterSignup: Sitter profile data:', data);
 
         if (data) {
+          // Mark as edit mode since profile exists
+          setIsEditMode(true);
+          
           // Check if user is explicitly accessing profile page (via "My Profile" button)
           const urlParams = new URLSearchParams(window.location.search);
           const isExplicitAccess = urlParams.get('edit') === 'true';
@@ -502,7 +506,7 @@ const SitterSignup = () => {
                         disabled={!formData.agreeTerms || !formData.agreeBackground || !formData.over16 || isLoading}
                       >
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                        Submit Application
+                        {isEditMode ? "Update profile" : "Submit Application"}
                       </Button>
                     </form>
                   </CardContent>
