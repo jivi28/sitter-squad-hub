@@ -26,33 +26,81 @@ interface Booking {
 }
 
 interface BookingsListProps {
-  sitterId: string;
+  sitterId?: string; // Make optional since we'll use auth user
 }
 
 const BookingsList = ({ sitterId }: BookingsListProps) => {
   const { toast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
+  const [debugInfo, setDebugInfo] = useState<string>("");
 
   useEffect(() => {
     fetchBookings();
-  }, [sitterId]);
+  }, []); // Remove sitterId dependency since we use auth user
 
   const fetchBookings = async () => {
     try {
-      // Get sitter info first to get their name
+      console.log('BookingsList: fetchBookings called');
+      
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        console.error('BookingsList: No authenticated user found');
+        setDebugInfo("No authenticated user found");
+        return;
+      }
+      
+      console.log('BookingsList: Current user ID:', user.id);
+      setDebugInfo(`User ID: ${user.id}`);
+
+      // Get sitter info using user_id instead of sitter id
       const { data: sitterData, error: sitterError } = await supabase
         .from('sitters')
-        .select('first_name, last_name')
-        .eq('id', sitterId)
+        .select('id, first_name, last_name')
+        .eq('user_id', user.id)
         .single();
 
-      if (sitterError) throw sitterError;
+      if (sitterError) {
+        console.error('BookingsList: Error fetching sitter data:', sitterError);
+        setDebugInfo(`Error fetching sitter: ${sitterError.message}`);
+        return;
+      }
+      
+      if (!sitterData) {
+        console.error('BookingsList: No sitter profile found for user');
+        setDebugInfo("No sitter profile found for user");
+        return;
+      }
 
       const sitterName = `${sitterData.first_name} ${sitterData.last_name}`;
+      console.log('BookingsList: Sitter name:', sitterName);
+      setDebugInfo(`Sitter: ${sitterName}`);
 
-      // Fetch bookings where this sitter is selected
+      // Fetch bookings where this sitter is selected - simplified query first
       const { data, error } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('sitter_name', sitterName)
+        .order('booking_date', { ascending: true });
+
+      if (error) {
+        console.error('BookingsList: Error fetching bookings:', error);
+        setDebugInfo(`Error fetching bookings: ${error.message}`);
+        return;
+      }
+
+      console.log('BookingsList: Raw bookings data:', data);
+      
+      if (!data || data.length === 0) {
+        console.log('BookingsList: No bookings found for sitter:', sitterName);
+        setDebugInfo(`No bookings found for ${sitterName}`);
+        setBookings([]);
+        return;
+      }
+
+      // Now fetch with profiles
+      const { data: bookingsWithProfiles, error: profileError } = await supabase
         .from('bookings')
         .select(`
           *,
@@ -66,11 +114,19 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
         .eq('sitter_name', sitterName)
         .order('booking_date', { ascending: true }) as { data: any[] | null; error: any };
 
-      if (error) throw error;
-
-      setBookings(data || []);
+      if (profileError) {
+        console.error('BookingsList: Error fetching bookings with profiles:', profileError);
+        // Fall back to basic bookings without profiles
+        setBookings(data as Booking[]);
+        setDebugInfo(`Found ${data.length} bookings (profile fetch failed)`);
+      } else {
+        console.log('BookingsList: Fetched bookings with profiles:', bookingsWithProfiles);
+        setBookings(bookingsWithProfiles || []);
+        setDebugInfo(`Found ${(bookingsWithProfiles || []).length} bookings with profiles`);
+      }
     } catch (error) {
-      console.error('Error fetching bookings:', error);
+      console.error('BookingsList: Error in fetchBookings:', error);
+      setDebugInfo(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
       toast({
         title: "Error",
         description: "Failed to load bookings. Please try again.",
@@ -145,6 +201,9 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
             <Calendar className="h-5 w-5" />
             <span>My Bookings ({bookings.length})</span>
           </CardTitle>
+          {debugInfo && (
+            <p className="text-sm text-muted-foreground">Debug: {debugInfo}</p>
+          )}
         </CardHeader>
         <CardContent>
           {bookings.length === 0 ? (
@@ -164,7 +223,7 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
                       <div className="space-y-1">
                         <div className="flex items-center space-x-2">
                           <h3 className="font-semibold">
-                            {booking.profiles?.first_name} {booking.profiles?.last_name}
+                            {booking.profiles?.first_name || 'N/A'} {booking.profiles?.last_name || 'N/A'}
                           </h3>
                           <Badge variant={getStatusColor(booking.status)}>
                             {booking.status}
@@ -215,12 +274,12 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
                           <MapPin className="h-4 w-4" />
                           <span>Address:</span>
                         </div>
-                        <p>{booking.profiles?.address}</p>
+                        <p>{booking.profiles?.address || 'N/A'}</p>
                       </div>
                       
                       <div>
                         <div className="text-muted-foreground mb-1">Phone:</div>
-                        <p>{booking.profiles?.phone}</p>
+                        <p>{booking.profiles?.phone || 'N/A'}</p>
                       </div>
                     </div>
 
