@@ -244,7 +244,7 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
                           </div>
                           <div className="flex items-center space-x-1">
                             <DollarSign className="h-4 w-4" />
-                            <span>${booking.total_cost}</span>
+                            <span>€{booking.total_cost}</span>
                           </div>
                         </div>
                       </div>
