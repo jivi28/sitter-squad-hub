@@ -420,13 +420,13 @@ const BookingSystem = () => {
                   </Label>
                   <Select
                     value={bookingDetails.preferredLanguage}
-                    onValueChange={(value) => updateBookingDetails("preferredLanguage", value)}
+                    onValueChange={(value) => updateBookingDetails("preferredLanguage", value === "any" ? "" : value)}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Any language is fine" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Any language is fine</SelectItem>
+                      <SelectItem value="any">Any language is fine</SelectItem>
                       <SelectItem value="English">English</SelectItem>
                       <SelectItem value="Spanish">Spanish</SelectItem>
                       <SelectItem value="French">French</SelectItem>
