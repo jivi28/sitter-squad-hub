@@ -4,7 +4,8 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar, Clock, MapPin, Star, Loader2 } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Calendar, Clock, MapPin, Star, Loader2, Languages } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -15,6 +16,7 @@ interface BookingDetails {
   endTime: string;
   children: number;
   notes: string;
+  preferredLanguage: string;
 }
 
 interface AvailabilitySlot {
@@ -45,7 +47,8 @@ const BookingSystem = () => {
     startTime: "",
     endTime: "",
     children: 1,
-    notes: ""
+    notes: "",
+    preferredLanguage: ""
   });
 
   // Get day of week from date (parse YYYY-MM-DD as local date to avoid TZ issues)
@@ -211,6 +214,7 @@ const BookingSystem = () => {
           end_time: bookingDetails.endTime,
           num_children: bookingDetails.children,
           special_notes: bookingDetails.notes || null,
+          preferred_language: bookingDetails.preferredLanguage || null,
           total_cost: totalCost,
           status: 'pending'
         });
@@ -229,7 +233,8 @@ const BookingSystem = () => {
         startTime: "",
         endTime: "",
         children: 1,
-        notes: ""
+        notes: "",
+        preferredLanguage: ""
       });
 
     } catch (error: any) {
@@ -406,6 +411,38 @@ const BookingSystem = () => {
                     value={bookingDetails.children}
                     onChange={(e) => updateBookingDetails("children", parseInt(e.target.value) || 1)}
                   />
+                </div>
+
+                <div className="space-y-2">
+                  <Label htmlFor="language" className="flex items-center space-x-2">
+                    <Languages className="w-4 h-4" />
+                    <span>Preferred Language (Optional)</span>
+                  </Label>
+                  <Select
+                    value={bookingDetails.preferredLanguage}
+                    onValueChange={(value) => updateBookingDetails("preferredLanguage", value)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Any language is fine" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Any language is fine</SelectItem>
+                      <SelectItem value="English">English</SelectItem>
+                      <SelectItem value="Spanish">Spanish</SelectItem>
+                      <SelectItem value="French">French</SelectItem>
+                      <SelectItem value="German">German</SelectItem>
+                      <SelectItem value="Italian">Italian</SelectItem>
+                      <SelectItem value="Portuguese">Portuguese</SelectItem>
+                      <SelectItem value="Dutch">Dutch</SelectItem>
+                      <SelectItem value="Arabic">Arabic</SelectItem>
+                      <SelectItem value="Chinese">Chinese</SelectItem>
+                      <SelectItem value="Japanese">Japanese</SelectItem>
+                      <SelectItem value="Korean">Korean</SelectItem>
+                      <SelectItem value="Russian">Russian</SelectItem>
+                      <SelectItem value="Hindi">Hindi</SelectItem>
+                      <SelectItem value="Other">Other</SelectItem>
+                    </SelectContent>
+                  </Select>
                 </div>
 
                 <div className="space-y-2">

@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Users, DollarSign, MapPin, Loader2 } from "lucide-react";
+import { Calendar, Clock, Users, DollarSign, MapPin, Loader2, Languages } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 
@@ -16,6 +16,7 @@ interface Booking {
   sitter_hourly_rate: number;
   status: string;
   special_notes: string | null;
+  preferred_language: string | null;
   user_id: string;
   profiles?: {
     first_name: string;
@@ -282,6 +283,18 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
                         <p>{booking.profiles?.phone || 'N/A'}</p>
                       </div>
                     </div>
+
+                    {booking.preferred_language && (
+                      <div className="mt-4">
+                        <div className="flex items-center space-x-1 text-muted-foreground text-sm mb-1">
+                          <Languages className="h-4 w-4" />
+                          <span>Preferred Language:</span>
+                        </div>
+                        <p className="text-sm bg-accent/50 px-3 py-2 rounded-lg">
+                          {booking.preferred_language}
+                        </p>
+                      </div>
+                    )}
 
                     {booking.special_notes && (
                       <div className="mt-4">

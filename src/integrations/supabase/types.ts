@@ -21,6 +21,7 @@ export type Database = {
           end_time: string
           id: string
           num_children: number
+          preferred_language: string | null
           sitter_hourly_rate: number
           sitter_name: string
           special_notes: string | null
@@ -36,6 +37,7 @@ export type Database = {
           end_time: string
           id?: string
           num_children: number
+          preferred_language?: string | null
           sitter_hourly_rate: number
           sitter_name: string
           special_notes?: string | null
@@ -51,6 +53,7 @@ export type Database = {
           end_time?: string
           id?: string
           num_children?: number
+          preferred_language?: string | null
           sitter_hourly_rate?: number
           sitter_name?: string
           special_notes?: string | null
