@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { GraduationCap, DollarSign, Calendar, AlertCircle, Loader2 } from "lucide-react";
+import { GraduationCap, DollarSign, Calendar, AlertCircle, Loader2, Languages } from "lucide-react";
 import Header from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -33,6 +33,7 @@ const SitterSignup = () => {
     specialSkills: "",
     references: "",
     transportation: "",
+    languages: [] as string[],
     agreeTerms: false,
     agreeBackground: false,
     over16: false
@@ -99,7 +100,8 @@ const SitterSignup = () => {
             experience: data.experience || "",
             specialSkills: data.special_skills || "",
             references: data.reference_contacts || "",
-            transportation: data.transportation || ""
+            transportation: data.transportation || "",
+            languages: data.languages || []
           }));
 
           // Only show success message for approved sitters if they're not editing
@@ -126,6 +128,15 @@ const SitterSignup = () => {
 
   const handleSelectChange = (name: string, value: string) => {
     setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleLanguageToggle = (language: string) => {
+    setFormData(prev => ({
+      ...prev,
+      languages: prev.languages.includes(language)
+        ? prev.languages.filter(lang => lang !== language)
+        : [...prev.languages, language]
+    }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -162,6 +173,7 @@ const SitterSignup = () => {
         special_skills: formData.specialSkills || null,
         reference_contacts: formData.references || null,
         transportation: formData.transportation || null,
+        languages: formData.languages.length > 0 ? formData.languages : null,
         status: 'pending'
       };
 
@@ -432,8 +444,38 @@ const SitterSignup = () => {
                           value={formData.specialSkills}
                           onChange={handleInputChange}
                           className="w-full h-20 px-3 py-2 border border-input rounded-md resize-none text-sm"
-                          placeholder="CPR certified, First Aid, tutoring experience, languages spoken, etc."
+                          placeholder="CPR certified, First Aid, tutoring experience, etc."
                         />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label className="flex items-center space-x-2">
+                          <Languages className="w-4 h-4" />
+                          <span>Languages Spoken</span>
+                        </Label>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-3 p-4 border border-input rounded-md">
+                          {[
+                            "English", "Spanish", "French", "German", "Italian", 
+                            "Portuguese", "Dutch", "Arabic", "Chinese", "Japanese", 
+                            "Korean", "Russian", "Hindi", "Turkish", "Polish"
+                          ].map((language) => (
+                            <div key={language} className="flex items-center space-x-2">
+                              <Checkbox
+                                id={`lang-${language}`}
+                                checked={formData.languages.includes(language)}
+                                onCheckedChange={() => handleLanguageToggle(language)}
+                              />
+                              <Label htmlFor={`lang-${language}`} className="text-sm">
+                                {language}
+                              </Label>
+                            </div>
+                          ))}
+                        </div>
+                        {formData.languages.length > 0 && (
+                          <p className="text-xs text-muted-foreground">
+                            Selected: {formData.languages.join(", ")}
+                          </p>
+                        )}
                       </div>
 
                       <div className="space-y-2">

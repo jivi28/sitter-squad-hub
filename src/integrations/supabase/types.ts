@@ -131,6 +131,7 @@ export type Database = {
           grade: string
           hourly_rate: number
           id: string
+          languages: string[] | null
           last_name: string
           phone: string
           reference_contacts: string | null
@@ -153,6 +154,7 @@ export type Database = {
           grade: string
           hourly_rate: number
           id?: string
+          languages?: string[] | null
           last_name: string
           phone: string
           reference_contacts?: string | null
@@ -175,6 +177,7 @@ export type Database = {
           grade?: string
           hourly_rate?: number
           id?: string
+          languages?: string[] | null
           last_name?: string
           phone?: string
           reference_contacts?: string | null

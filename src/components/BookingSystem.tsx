@@ -32,6 +32,7 @@ interface Sitter {
   hourly_rate: number;
   experience: string;
   special_skills: string;
+  languages: string[] | null;
   availability: any; // Supabase Json type - will be AvailabilitySlot[] in runtime
 }
 
@@ -320,6 +321,22 @@ const BookingSystem = () => {
                                       className="px-2 py-1 bg-accent text-accent-foreground text-xs rounded-full"
                                     >
                                       {skill.trim()}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                              {sitter.languages && sitter.languages.length > 0 && (
+                                <div className="flex flex-wrap gap-2 mb-3">
+                                  <div className="flex items-center space-x-1 text-xs text-muted-foreground">
+                                    <Languages className="w-3 h-3" />
+                                    <span>Languages:</span>
+                                  </div>
+                                  {sitter.languages.map((language, index) => (
+                                    <span 
+                                      key={index}
+                                      className="px-2 py-1 bg-secondary text-secondary-foreground text-xs rounded-full"
+                                    >
+                                      {language}
                                     </span>
                                   ))}
                                 </div>

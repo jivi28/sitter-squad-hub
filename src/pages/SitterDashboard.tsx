@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Calendar, Clock, Users, DollarSign } from "lucide-react";
+import { Loader2, Calendar, Clock, Users, DollarSign, Languages } from "lucide-react";
 import Header from "@/components/Header";
 import AvailabilityManager from "@/components/AvailabilityManager";
 import BookingsList from "@/components/BookingsList";
@@ -18,6 +18,7 @@ interface SitterProfile {
   status: string;
   approved_at: string | null;
   availability: any;
+  languages: string[] | null;
 }
 
 const SitterDashboard = () => {
@@ -207,6 +208,21 @@ const SitterDashboard = () => {
                       <p className="font-medium">Status</p>
                       <p className="text-muted-foreground capitalize">{sitterProfile.status}</p>
                     </div>
+                    {sitterProfile.languages && sitterProfile.languages.length > 0 && (
+                      <div>
+                        <p className="font-medium flex items-center space-x-2">
+                          <Languages className="w-4 h-4" />
+                          <span>Languages</span>
+                        </p>
+                        <div className="flex flex-wrap gap-2 mt-1">
+                          {sitterProfile.languages.map((language: string) => (
+                            <span key={language} className="px-2 py-1 bg-accent text-accent-foreground text-xs rounded-full">
+                              {language}
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                     <Button 
                       variant="outline" 
                       onClick={() => window.location.href = '/sitter-signup?edit=true'}
