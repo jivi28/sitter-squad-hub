@@ -9,9 +9,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+// Initialize Supabase client with service role for server-side lookups
+const supabaseUrl = Deno.env.get('SUPABASE_URL') as string;
+const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string;
+const supabase = createClient(supabaseUrl, supabaseServiceRoleKey);
+
 interface BookingConfirmationRequest {
   bookingId: string;
-  parentEmail: string;
+  parentEmail?: string;
+  parentUserId?: string;
   parentName: string;
   sitterName: string;
   bookingDate: string;
@@ -36,6 +42,7 @@ const handler = async (req: Request): Promise<Response> => {
     const {
       bookingId,
       parentEmail,
+      parentUserId,
       parentName,
       sitterName,
       bookingDate,
@@ -48,7 +55,21 @@ const handler = async (req: Request): Promise<Response> => {
       preferredLanguage
     }: BookingConfirmationRequest = await req.json();
 
-    console.log("Sending confirmation email to:", parentEmail);
+    // Resolve parent's email: prefer provided, otherwise fetch via admin API using service role
+    let resolvedParentEmail = parentEmail;
+    if (!resolvedParentEmail) {
+      if (!parentUserId) {
+        throw new Error("Missing parent email and parentUserId");
+      }
+      const { data: userData, error: getUserError } = await supabase.auth.admin.getUserById(parentUserId);
+      if (getUserError || !userData?.user?.email) {
+        console.error("Failed to resolve parent email via admin.getUserById:", getUserError);
+        throw new Error("Could not resolve parent email");
+      }
+      resolvedParentEmail = userData.user.email;
+    }
+
+    console.log("Sending confirmation email to:", resolvedParentEmail);
 
     // Format date for better display
     const formattedDate = new Date(bookingDate).toLocaleDateString('en-US', {
@@ -135,7 +156,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     const emailResponse = await resend.emails.send({
       from: "Babysitting Service <onboarding@resend.dev>",
-      to: [parentEmail],
+      to: [resolvedParentEmail],
       subject: `Booking Confirmed with ${sitterName} - ${formattedDate}`,
       html: emailContent,
     });
