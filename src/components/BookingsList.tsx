@@ -184,6 +184,11 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
 
             if (emailError) {
               console.error('Failed to send confirmation email:', emailError);
+              toast({
+                title: 'Email not sent',
+                description: typeof emailError.message === 'string' ? emailError.message : 'We could not notify the parent via email. Please verify your email sender settings.',
+                variant: 'destructive',
+              });
             } else {
               console.log('Confirmation email sent successfully');
             }

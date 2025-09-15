@@ -154,14 +154,21 @@ const handler = async (req: Request): Promise<Response> => {
       </div>
     `;
 
+    const fromAddress = Deno.env.get("RESEND_FROM_EMAIL") || "Babysitting Service <onboarding@resend.dev>";
+
     const emailResponse = await resend.emails.send({
-      from: "Babysitting Service <onboarding@resend.dev>",
+      from: fromAddress as string,
       to: [resolvedParentEmail],
       subject: `Booking Confirmed with ${sitterName} - ${formattedDate}`,
       html: emailContent,
     });
 
-    console.log("Email sent successfully:", emailResponse);
+    if (emailResponse.error) {
+      console.error("Resend error:", emailResponse.error);
+      throw { message: emailResponse.error.error || "Failed to send email", statusCode: emailResponse.error.statusCode || 500 };
+    }
+
+    console.log("Email sent successfully:", emailResponse.data);
 
     return new Response(JSON.stringify({ 
       success: true, 
@@ -176,13 +183,15 @@ const handler = async (req: Request): Promise<Response> => {
 
   } catch (error: any) {
     console.error("Error in send-booking-confirmation function:", error);
+    const statusCode = typeof error?.statusCode === 'number' ? (error.statusCode === 403 ? 400 : error.statusCode) : 500;
+    const message = error?.message || 'Unknown error sending email';
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: error.message 
+        error: message 
       }),
       {
-        status: 500,
+        status: statusCode,
         headers: { "Content-Type": "application/json", ...corsHeaders },
       }
     );
