@@ -18,6 +18,7 @@ interface Booking {
   special_notes: string | null;
   preferred_language: string | null;
   user_id: string;
+  sitter_name: string;
   profiles?: {
     first_name: string;
     last_name: string;
@@ -155,9 +156,51 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
         )
       );
 
+      // Send confirmation email to parent if booking is confirmed
+      if (newStatus === 'confirmed') {
+        const booking = bookings.find(b => b.id === bookingId);
+        if (booking && booking.profiles) {
+          try {
+            // Get parent's email from auth users
+            const { data: userData, error: userError } = await supabase.auth.admin.getUserById(booking.user_id);
+            
+            if (!userError && userData.user?.email) {
+              const { error: emailError } = await supabase.functions.invoke('send-booking-confirmation', {
+                body: {
+                  bookingId: booking.id,
+                  parentEmail: userData.user.email,
+                  parentName: `${booking.profiles.first_name} ${booking.profiles.last_name}`,
+                  sitterName: booking.sitter_name,
+                  bookingDate: booking.booking_date,
+                  startTime: booking.start_time,
+                  endTime: booking.end_time,
+                  numChildren: booking.num_children,
+                  totalCost: booking.total_cost,
+                  address: booking.profiles.address,
+                  specialNotes: booking.special_notes,
+                  preferredLanguage: booking.preferred_language
+                }
+              });
+
+              if (emailError) {
+                console.error('Failed to send confirmation email:', emailError);
+                // Don't fail the whole operation if email fails
+              } else {
+                console.log('Confirmation email sent successfully');
+              }
+            }
+          } catch (emailError) {
+            console.error('Error sending confirmation email:', emailError);
+            // Don't fail the whole operation if email fails
+          }
+        }
+      }
+
       toast({
         title: "Success!",
-        description: `Booking ${newStatus} successfully.`,
+        description: newStatus === 'confirmed' 
+          ? `Booking confirmed! The parent has been notified via email.`
+          : `Booking ${newStatus} successfully.`,
       });
     } catch (error) {
       console.error('Error updating booking status:', error);
