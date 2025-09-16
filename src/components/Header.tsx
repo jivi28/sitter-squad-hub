@@ -142,7 +142,7 @@ const Header = () => {
                     Parent Login
                   </Button>
                   <Button variant="trust" size="sm" className="self-start" onClick={() => window.location.href = '/sitter-signup'}>
-                    Become a Sitter
+                    Sitter Login
                   </Button>
                 </>
               )}
