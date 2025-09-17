@@ -87,6 +87,11 @@ const Header = () => {
             <a href="/about" className="text-muted-foreground hover:text-foreground transition-colors">
               About Us
             </a>
+            {user && userType === 'parent' && (
+              <a href="/parent-dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
+                My Bookings
+              </a>
+            )}
             {user ? (
               <>
                 <Button variant="outline" size="sm" onClick={handleMyProfileClick}>
@@ -126,6 +131,11 @@ const Header = () => {
               <a href="/about" className="text-muted-foreground hover:text-foreground transition-colors">
                 About Us
               </a>
+              {user && userType === 'parent' && (
+                <a href="/parent-dashboard" className="text-muted-foreground hover:text-foreground transition-colors">
+                  My Bookings
+                </a>
+              )}
               {user ? (
                 <>
                   <Button variant="outline" size="sm" className="self-start" onClick={handleMyProfileClick}>

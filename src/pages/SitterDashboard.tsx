@@ -7,6 +7,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Loader2, Calendar, Clock, Users, DollarSign, Languages } from "lucide-react";
 import Header from "@/components/Header";
 import AvailabilityManager from "@/components/AvailabilityManager";
+import BookingRequests from "@/components/BookingRequests";
 import BookingsList from "@/components/BookingsList";
 import { useToast } from "@/hooks/use-toast";
 

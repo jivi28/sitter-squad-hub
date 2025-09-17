@@ -10,6 +10,7 @@ import ParentSignup from "./pages/ParentSignup";
 import SitterSignup from "./pages/SitterSignup";
 import SitterAuth from "./pages/SitterAuth";
 import SitterDashboard from "./pages/SitterDashboard";
+import ParentDashboard from "./pages/ParentDashboard";
 import VerifyEmail from "./pages/VerifyEmail";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./hooks/useAuth";
@@ -28,6 +29,7 @@ const App = () => (
             <Route path="/about" element={<About />} />
             <Route path="/auth" element={<Auth />} />
             <Route path="/parent-signup" element={<ParentSignup />} />
+            <Route path="/parent-dashboard" element={<ParentDashboard />} />
             <Route path="/sitter-signup" element={<SitterSignup />} />
             <Route path="/sitter-auth" element={<SitterAuth />} />
             <Route path="/sitter-dashboard" element={<SitterDashboard />} />

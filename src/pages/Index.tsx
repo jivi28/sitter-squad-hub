@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
 import HowItWorks from "@/components/HowItWorks";
-import BookingSystem from "@/components/BookingSystem";
+import RequestBasedBookingSystem from "@/components/RequestBasedBookingSystem";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -69,7 +69,7 @@ const Index = () => {
       <Header />
       <Hero />
       <HowItWorks />
-      {showBookingSection && <BookingSystem />}
+      {showBookingSection && <RequestBasedBookingSystem />}
     </div>
   );
 };

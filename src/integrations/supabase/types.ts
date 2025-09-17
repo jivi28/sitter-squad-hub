@@ -14,6 +14,41 @@ export type Database = {
   }
   public: {
     Tables: {
+      booking_responses: {
+        Row: {
+          booking_id: string
+          created_at: string
+          id: string
+          message: string | null
+          response: string
+          sitter_id: string
+        }
+        Insert: {
+          booking_id: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          response: string
+          sitter_id: string
+        }
+        Update: {
+          booking_id?: string
+          created_at?: string
+          id?: string
+          message?: string | null
+          response?: string
+          sitter_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "booking_responses_booking_id_fkey"
+            columns: ["booking_id"]
+            isOneToOne: false
+            referencedRelation: "bookings"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       bookings: {
         Row: {
           booking_date: string
@@ -21,9 +56,13 @@ export type Database = {
           end_time: string
           id: string
           num_children: number
+          payment_status: string | null
           preferred_language: string | null
-          sitter_hourly_rate: number
-          sitter_name: string
+          request_expires_at: string | null
+          request_sent_at: string | null
+          sitter_hourly_rate: number | null
+          sitter_id: string | null
+          sitter_name: string | null
           special_notes: string | null
           start_time: string
           status: string
@@ -37,9 +76,13 @@ export type Database = {
           end_time: string
           id?: string
           num_children: number
+          payment_status?: string | null
           preferred_language?: string | null
-          sitter_hourly_rate: number
-          sitter_name: string
+          request_expires_at?: string | null
+          request_sent_at?: string | null
+          sitter_hourly_rate?: number | null
+          sitter_id?: string | null
+          sitter_name?: string | null
           special_notes?: string | null
           start_time: string
           status?: string
@@ -53,9 +96,13 @@ export type Database = {
           end_time?: string
           id?: string
           num_children?: number
+          payment_status?: string | null
           preferred_language?: string | null
-          sitter_hourly_rate?: number
-          sitter_name?: string
+          request_expires_at?: string | null
+          request_sent_at?: string | null
+          sitter_hourly_rate?: number | null
+          sitter_id?: string | null
+          sitter_name?: string | null
           special_notes?: string | null
           start_time?: string
           status?: string
@@ -72,6 +119,27 @@ export type Database = {
             referencedColumns: ["user_id"]
           },
         ]
+      }
+      favorite_sitters: {
+        Row: {
+          created_at: string
+          id: string
+          sitter_id: string
+          user_id: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          sitter_id: string
+          user_id: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          sitter_id?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       profiles: {
         Row: {
