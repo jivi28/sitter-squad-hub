@@ -167,12 +167,17 @@ const SitterDashboard = () => {
           </div>
 
           {/* Main Content Tabs */}
-          <Tabs defaultValue="availability" className="space-y-6">
+          <Tabs defaultValue="requests" className="space-y-6">
             <TabsList>
+              <TabsTrigger value="requests">New Requests</TabsTrigger>
               <TabsTrigger value="availability">My Availability</TabsTrigger>
               <TabsTrigger value="bookings">My Bookings</TabsTrigger>
               <TabsTrigger value="profile">Profile</TabsTrigger>
             </TabsList>
+
+            <TabsContent value="requests">
+              <BookingRequests />
+            </TabsContent>
 
             <TabsContent value="availability">
               <AvailabilityManager 
