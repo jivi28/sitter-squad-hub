@@ -202,7 +202,7 @@ const RequestBasedBookingSystem = () => {
                     <SelectValue placeholder="No preference" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">No preference</SelectItem>
+                    <SelectItem value="no-preference">No preference</SelectItem>
                     <SelectItem value="English">English</SelectItem>
                     <SelectItem value="Spanish">Spanish</SelectItem>
                     <SelectItem value="French">French</SelectItem>
