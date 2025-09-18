@@ -57,10 +57,15 @@ const ParentBookingHistory = () => {
   }, [user]);
 
   const fetchBookings = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user available for fetching bookings');
+      return;
+    }
 
     try {
       setLoading(true);
+      console.log('Fetching bookings for user:', user.id);
+      
       const { data, error } = await supabase
         .from("bookings")
         .select("*")
@@ -68,9 +73,11 @@ const ParentBookingHistory = () => {
         .order("created_at", { ascending: false });
 
       if (error) {
+        console.error('Booking fetch error:', error);
         throw error;
       }
 
+      console.log('Bookings fetched successfully:', data?.length || 0, 'bookings');
       setBookings(data || []);
     } catch (error) {
       console.error("Error fetching bookings:", error);

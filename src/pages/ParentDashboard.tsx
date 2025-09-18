@@ -39,18 +39,28 @@ const ParentDashboard = () => {
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
+    // Don't redirect if we're still loading auth state
+    if (loading) return;
+    
     if (!user) {
+      console.log('No user found, redirecting to auth');
       navigate("/auth");
       return;
     }
+    
+    console.log('User authenticated, fetching parent data:', user.email);
     fetchParentData();
-  }, [user, navigate]);
+  }, [user, loading, navigate]);
 
   const fetchParentData = async () => {
-    if (!user) return;
+    if (!user) {
+      console.log('No user available for fetching parent data');
+      return;
+    }
 
     try {
       setLoading(true);
+      console.log('Fetching parent data for user:', user.id);
 
       // Fetch parent profile
       const { data: profile, error: profileError } = await supabase
@@ -62,11 +72,14 @@ const ParentDashboard = () => {
       if (profileError) {
         console.error("Error fetching profile:", profileError);
         if (profileError.code === 'PGRST116') {
+          console.log('Profile not found, redirecting to signup');
           navigate("/parent-signup");
           return;
         }
         throw profileError;
       }
+
+      console.log('Profile fetched successfully:', profile);
 
       // Fetch booking statistics
       const { data: bookings, error: bookingsError } = await supabase
@@ -75,8 +88,11 @@ const ParentDashboard = () => {
         .eq("user_id", user.id);
 
       if (bookingsError) {
+        console.error("Error fetching bookings:", bookingsError);
         throw bookingsError;
       }
+
+      console.log('Bookings fetched:', bookings?.length || 0, 'bookings');
 
       const now = new Date();
       const stats: BookingStats = {
@@ -109,6 +125,7 @@ const ParentDashboard = () => {
         <Header />
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin" />
+          <span className="ml-2">Loading your dashboard...</span>
         </div>
       </div>
     );

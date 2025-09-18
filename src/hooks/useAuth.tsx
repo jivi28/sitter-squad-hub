@@ -23,7 +23,11 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
         console.log('Auth state changed:', event, session?.user?.email);
         setSession(session);
         setUser(session?.user ?? null);
-        setLoading(false);
+        
+        // Only set loading to false after we've processed the auth state
+        if (event === 'INITIAL_SESSION' || event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+          setLoading(false);
+        }
       }
     );
 
