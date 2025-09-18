@@ -113,10 +113,13 @@ const BookingRequests = () => {
       // Filter requests that match sitter's availability
       const matchingRequests = allRequests?.filter(request => {
         if (!sitterData.availability || !Array.isArray(sitterData.availability)) {
+          console.log('No availability data for sitter');
           return false;
         }
 
         const requestedDay = getDayOfWeek(request.booking_date);
+        console.log(`Request for ${request.booking_date} is on ${requestedDay}`);
+        console.log('Sitter availability:', sitterData.availability);
         
         return sitterData.availability.some((slot: any) => {
           const dayMatch = slot.day === requestedDay;
@@ -126,6 +129,8 @@ const BookingRequests = () => {
             slot.startTime, 
             slot.endTime
           );
+          console.log(`Checking slot: ${slot.day} ${slot.startTime}-${slot.endTime}`);
+          console.log(`Day match: ${dayMatch}, Time match: ${timeMatch}`);
           return dayMatch && timeMatch;
         });
       }) || [];
