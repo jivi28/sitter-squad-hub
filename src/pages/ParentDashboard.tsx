@@ -31,16 +31,19 @@ interface BookingStats {
 }
 
 const ParentDashboard = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const { toast } = useToast();
   const [parentProfile, setParentProfile] = useState<ParentProfile | null>(null);
   const [bookingStats, setBookingStats] = useState<BookingStats | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [dataLoading, setDataLoading] = useState(false);
 
   useEffect(() => {
     // Don't redirect if we're still loading auth state
-    if (loading) return;
+    if (authLoading) {
+      console.log('Auth still loading, waiting...');
+      return;
+    }
     
     if (!user) {
       console.log('No user found, redirecting to auth');
@@ -50,7 +53,7 @@ const ParentDashboard = () => {
     
     console.log('User authenticated, fetching parent data:', user.email);
     fetchParentData();
-  }, [user, loading, navigate]);
+  }, [user, authLoading, navigate]);
 
   const fetchParentData = async () => {
     if (!user) {
@@ -59,7 +62,7 @@ const ParentDashboard = () => {
     }
 
     try {
-      setLoading(true);
+      setDataLoading(true);
       console.log('Fetching parent data for user:', user.id);
 
       // Fetch parent profile
@@ -115,17 +118,20 @@ const ParentDashboard = () => {
         variant: "destructive",
       });
     } finally {
-      setLoading(false);
+      setDataLoading(false);
     }
   };
 
-  if (loading) {
+  // Show loading screen only if auth is loading OR if we're fetching data
+  if (authLoading || dataLoading) {
     return (
       <div className="min-h-screen bg-background">
         <Header />
         <div className="flex items-center justify-center py-20">
           <Loader2 className="h-8 w-8 animate-spin" />
-          <span className="ml-2">Loading your dashboard...</span>
+          <span className="ml-2">
+            {authLoading ? "Authenticating..." : "Loading your dashboard..."}
+          </span>
         </div>
       </div>
     );
