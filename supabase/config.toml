@@ -9,3 +9,6 @@ max_rows = 1000
 
 [functions.send-booking-confirmation]
 verify_jwt = true
+
+[functions.fetch-available-requests]
+verify_jwt = true

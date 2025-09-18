@@ -75,80 +75,16 @@ const BookingRequests = () => {
 
       setSitter(sitterData);
 
-      // Get day of week function
-      const getDayOfWeek = (dateString: string) => {
-        const date = new Date(dateString);
-        const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        return days[date.getDay()];
-      };
-
-      // Check if times overlap
-      const timesOverlap = (start1: string, end1: string, start2: string, end2: string) => {
-        return start1 < end2 && end1 > start2;
-      };
-
-      // Get all pending booking requests
-      const { data: allRequests, error: requestsError } = await supabase
-        .from('bookings')
-        .select(`
-          *,
-          profiles (
-            first_name,
-            last_name,
-            phone,
-            address,
-            children_ages,
-            emergency_contact,
-            special_needs
-          )
-        `)
-        .eq('status', 'pending')
-        .gt('request_expires_at', new Date().toISOString())
-        .order('created_at', { ascending: false });
+      // Fetch matching pending booking requests from Edge Function (handles RLS securely)
+      const { data: requestsData, error: requestsError } = await supabase
+        .functions
+        .invoke('fetch-available-requests');
 
       if (requestsError) {
         throw requestsError;
       }
 
-      // Filter requests that match sitter's availability
-      const matchingRequests = allRequests?.filter(request => {
-        if (!sitterData.availability || !Array.isArray(sitterData.availability)) {
-          console.log('No availability data for sitter');
-          return false;
-        }
-
-        const requestedDay = getDayOfWeek(request.booking_date);
-        console.log(`Request for ${request.booking_date} is on ${requestedDay}`);
-        console.log('Sitter availability:', sitterData.availability);
-        
-        return sitterData.availability.some((slot: any) => {
-          const dayMatch = slot.day === requestedDay;
-          const timeMatch = timesOverlap(
-            request.start_time, 
-            request.end_time, 
-            slot.startTime, 
-            slot.endTime
-          );
-          console.log(`Checking slot: ${slot.day} ${slot.startTime}-${slot.endTime}`);
-          console.log(`Day match: ${dayMatch}, Time match: ${timeMatch}`);
-          return dayMatch && timeMatch;
-        });
-      }) || [];
-
-      // Check which requests this sitter has already responded to
-      const { data: responses } = await supabase
-        .from('booking_responses')
-        .select('booking_id')
-        .eq('sitter_id', sitterData.id);
-
-      const respondedToIds = new Set(responses?.map(r => r.booking_id) || []);
-      
-      // Filter out requests already responded to
-      const unrespondedRequests = matchingRequests.filter(
-        request => !respondedToIds.has(request.id)
-      );
-
-      setRequests(unrespondedRequests);
+      setRequests(requestsData?.requests || []);
     } catch (error) {
       console.error('Error fetching booking requests:', error);
       toast({
