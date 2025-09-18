@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Calendar, Clock, User, DollarSign, RefreshCw, Heart } from "lucide-react";
+import { Loader2, Calendar, Clock, User, DollarSign, RefreshCw, Heart, CreditCard } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -48,6 +48,7 @@ const ParentBookingHistory = () => {
   });
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [rebooking, setRebooking] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) {
@@ -231,6 +232,45 @@ const ParentBookingHistory = () => {
     }
   };
 
+  const handlePayment = async (booking: Booking) => {
+    if (!user) return;
+    
+    try {
+      setPaymentLoading(booking.id);
+      
+      const { data, error } = await supabase.functions.invoke('create-booking-payment', {
+        body: { booking_id: booking.id }
+      });
+
+      if (error) {
+        throw error;
+      }
+
+      if (data.url) {
+        // Open payment in new tab
+        window.open(data.url, '_blank');
+        
+        toast({
+          title: "Payment Started",
+          description: "Payment window opened. Complete your payment to confirm the booking.",
+        });
+      }
+    } catch (error) {
+      console.error("Payment error:", error);
+      toast({
+        title: "Payment Error",
+        description: "Failed to start payment process. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setPaymentLoading(null);
+    }
+  };
+
+  const canPay = (booking: Booking) => {
+    return booking.status === "confirmed" && booking.payment_status === "pending";
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -323,7 +363,22 @@ const ParentBookingHistory = () => {
                 </div>
               )}
 
-              <div className="flex gap-2">
+              <div className="flex gap-2 flex-wrap">
+                {canPay(booking) && (
+                  <Button
+                    onClick={() => handlePayment(booking)}
+                    disabled={paymentLoading === booking.id}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    {paymentLoading === booking.id ? (
+                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                    ) : (
+                      <CreditCard className="h-4 w-4 mr-2" />
+                    )}
+                    Pay ${booking.total_cost}
+                  </Button>
+                )}
+                
                 {canRebook(booking) && (
                   <Dialog>
                     <DialogTrigger asChild>

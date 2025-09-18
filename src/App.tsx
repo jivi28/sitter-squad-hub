@@ -12,6 +12,7 @@ import SitterAuth from "./pages/SitterAuth";
 import SitterDashboard from "./pages/SitterDashboard";
 import ParentDashboard from "./pages/ParentDashboard";
 import VerifyEmail from "./pages/VerifyEmail";
+import PaymentSuccess from "./pages/PaymentSuccess";
 import NotFound from "./pages/NotFound";
 import { AuthProvider } from "./hooks/useAuth";
 
@@ -34,6 +35,7 @@ const App = () => (
             <Route path="/sitter-auth" element={<SitterAuth />} />
             <Route path="/sitter-dashboard" element={<SitterDashboard />} />
             <Route path="/verify-email" element={<VerifyEmail />} />
+            <Route path="/payment-success" element={<PaymentSuccess />} />
             {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
             <Route path="*" element={<NotFound />} />
           </Routes>

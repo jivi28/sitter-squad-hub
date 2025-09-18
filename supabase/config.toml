@@ -12,3 +12,9 @@ verify_jwt = true
 
 [functions.fetch-available-requests]
 verify_jwt = true
+
+[functions.create-booking-payment]
+verify_jwt = false
+
+[functions.verify-booking-payment]
+verify_jwt = false
