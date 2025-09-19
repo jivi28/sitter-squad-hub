@@ -54,6 +54,45 @@ const ParentBookingHistory = () => {
   useEffect(() => {
     if (user) {
       fetchBookings();
+      
+      // Set up real-time listener for new booking responses
+      const channel = supabase
+        .channel('booking-responses-changes')
+        .on(
+          'postgres_changes',
+          {
+            event: 'INSERT',
+            schema: 'public',
+            table: 'booking_responses',
+            filter: `response=eq.accepted`
+          },
+          async (payload) => {
+            console.log('New sitter application received:', payload);
+            
+            // Check if this response is for one of the user's bookings
+            const { data: booking } = await supabase
+              .from('bookings')
+              .select('user_id')
+              .eq('id', payload.new.booking_id)
+              .single();
+            
+            if (booking?.user_id === user.id) {
+              // Show notification
+              toast({
+                title: "New Sitter Application!",
+                description: "A sitter has applied for one of your booking requests.",
+              });
+              
+              // Refresh bookings to show the new application
+              fetchBookings();
+            }
+          }
+        )
+        .subscribe();
+
+      return () => {
+        supabase.removeChannel(channel);
+      };
     }
   }, [user]);
 

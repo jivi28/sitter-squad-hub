@@ -47,6 +47,7 @@ const BookingRequests = () => {
   const [responding, setResponding] = useState<string | null>(null);
   const [responseMessage, setResponseMessage] = useState("");
   const [sitter, setSitter] = useState<Sitter | null>(null);
+  const [appliedBookings, setAppliedBookings] = useState<string[]>([]);
 
   useEffect(() => {
     fetchBookingRequests();
@@ -74,6 +75,16 @@ const BookingRequests = () => {
       }
 
       setSitter(sitterData);
+
+      // Check which bookings the sitter has already applied to
+      const { data: responses, error: responsesError } = await supabase
+        .from('booking_responses')
+        .select('booking_id')
+        .eq('sitter_id', sitterData.id);
+
+      if (!responsesError) {
+        setAppliedBookings(responses?.map(r => r.booking_id) || []);
+      }
 
       // Fetch matching pending booking requests from Edge Function (handles RLS securely)
       const { data: requestsData, error: requestsError } = await supabase
@@ -289,7 +300,18 @@ const BookingRequests = () => {
               )}
 
               <div className="flex gap-2 pt-4 border-t">
-                <Dialog>
+                {appliedBookings.includes(request.id) ? (
+                  <div className="w-full text-center py-2">
+                    <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                      ✓ Application Submitted
+                    </Badge>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      You've applied for this booking. The parent will review applications and choose their preferred sitter.
+                    </p>
+                  </div>
+                ) : (
+                  <>
+                    <Dialog>
                   <DialogTrigger asChild>
                     <Button 
                       variant="default" 
@@ -376,7 +398,9 @@ const BookingRequests = () => {
                       </div>
                     </div>
                   </DialogContent>
-                </Dialog>
+                    </Dialog>
+                  </>
+                )}
               </div>
             </CardContent>
           </Card>

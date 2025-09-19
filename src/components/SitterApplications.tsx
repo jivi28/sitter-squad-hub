@@ -45,11 +45,12 @@ const SitterApplications = ({ bookingId, onSitterSelected }: SitterApplicationsP
       const { data, error } = await supabase
         .from("booking_responses")
         .select(`
-          *,
-          sitters (
-            id, first_name, last_name, hourly_rate, experience, 
-            languages, child_age_groups, special_skills
-          )
+          id,
+          sitter_id,
+          response,
+          message,
+          created_at,
+          booking_id
         `)
         .eq("booking_id", bookingId)
         .eq("response", "accepted")
@@ -57,7 +58,33 @@ const SitterApplications = ({ bookingId, onSitterSelected }: SitterApplicationsP
 
       if (error) throw error;
 
-      setApplications(data || []);
+      // Fetch sitter details for each application
+      const applicationsWithSitters = await Promise.all(
+        (data || []).map(async (application) => {
+          const { data: sitterData, error: sitterError } = await supabase
+            .from("sitters")
+            .select(`
+              id, first_name, last_name, hourly_rate, experience, 
+              languages, child_age_groups, special_skills
+            `)
+            .eq("id", application.sitter_id)
+            .single();
+
+          if (sitterError) {
+            console.error("Error fetching sitter:", sitterError);
+            return null;
+          }
+
+          return {
+            ...application,
+            sitters: sitterData
+          };
+        })
+      );
+
+      // Filter out any null results
+      const validApplications = applicationsWithSitters.filter(Boolean) as SitterApplication[];
+      setApplications(validApplications);
     } catch (error) {
       console.error("Error fetching applications:", error);
       toast({
