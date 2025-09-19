@@ -62,14 +62,22 @@ serve(async (req) => {
       throw new Error('Booking not found');
     }
 
-    // Check if booking is still pending and not expired
-    if (booking.status !== 'pending') {
-      throw new Error('Booking is no longer available');
+    // Check if booking is still available for responses
+    if (booking.status !== 'pending' && booking.status !== 'received_responses') {
+      throw new Error('Booking is no longer available for responses');
     }
 
     if (booking.request_expires_at && new Date(booking.request_expires_at) < new Date()) {
       throw new Error('Booking request has expired');
     }
+
+    // Check if this is the first response for this booking
+    const { data: existingResponses } = await supabaseClient
+      .from('booking_responses')
+      .select('id')
+      .eq('booking_id', booking_id);
+
+    const isFirstResponse = !existingResponses || existingResponses.length <= 1; // <= 1 because we just inserted one
 
     // Record the response
     const { error: responseError } = await supabaseClient
@@ -86,41 +94,22 @@ serve(async (req) => {
       throw responseError;
     }
 
-    if (response === 'accepted') {
-      // Calculate total cost
-      const startTime = new Date(`1970-01-01T${booking.start_time}`);
-      const endTime = new Date(`1970-01-01T${booking.end_time}`);
-      const hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
-      const totalCost = hours * sitter.hourly_rate;
-
-      // Update booking with sitter information
-      const { error: updateError } = await supabaseClient
+    // Update booking status to show it has responses if this is the first response
+    if (isFirstResponse && response === 'accepted') {
+      await supabaseClient
         .from('bookings')
-        .update({
-          sitter_id: sitter.id,
-          sitter_name: `${sitter.first_name} ${sitter.last_name}`,
-          sitter_hourly_rate: sitter.hourly_rate,
-          total_cost: totalCost,
-          status: 'confirmed'
-        })
+        .update({ status: 'received_responses' })
         .eq('id', booking_id);
+    }
 
-      if (updateError) {
-        console.error('Error updating booking:', updateError);
-        throw updateError;
-      }
-
-      // TODO: Send confirmation email to parent
-      // TODO: Create payment intent for the booking
-      
-      console.log(`Booking ${booking_id} accepted by sitter ${sitter.first_name} ${sitter.last_name}`);
+    if (response === 'accepted') {
+      console.log(`Sitter ${sitter.first_name} ${sitter.last_name} applied for booking ${booking_id}`);
 
       return new Response(
         JSON.stringify({
           success: true,
-          message: `Booking accepted! Total cost: $${totalCost.toFixed(2)}`,
-          booking_status: 'confirmed',
-          total_cost: totalCost
+          message: `You've applied for this booking! The parent will review all applications and choose their preferred sitter.`,
+          booking_status: 'received_responses'
         }),
         {
           status: 200,

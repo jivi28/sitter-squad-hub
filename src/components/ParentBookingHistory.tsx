@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import SitterApplications from "./SitterApplications";
 
 interface Booking {
   id: string;
@@ -97,6 +98,8 @@ const ParentBookingHistory = () => {
         return "default";
       case "pending":
         return "secondary";
+      case "received_responses":
+        return "outline";
       case "completed":
         return "outline";
       case "cancelled":
@@ -367,6 +370,18 @@ const ParentBookingHistory = () => {
                   <p className="text-sm text-muted-foreground">
                     <strong>Preferred Language:</strong> {booking.preferred_language}
                   </p>
+                </div>
+              )}
+
+              {booking.status === "received_responses" && (
+                <div className="mt-4">
+                  <SitterApplications 
+                    bookingId={booking.id} 
+                    onSitterSelected={() => {
+                      // Refresh bookings after sitter selection
+                      fetchBookings();
+                    }} 
+                  />
                 </div>
               )}
 
