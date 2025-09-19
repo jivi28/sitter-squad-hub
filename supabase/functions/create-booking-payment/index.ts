@@ -18,18 +18,19 @@ serve(async (req) => {
   }
 
   try {
-    // Initialize Supabase client
+    // Initialize Supabase client with service role key for admin operations
     const supabaseClient = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_ANON_KEY") ?? ""
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
-    // Authenticate user
+    // Get authenticated user from JWT (automatically verified by Supabase)
     const authHeader = req.headers.get("Authorization")!;
     const token = authHeader.replace("Bearer ", "");
-    const { data } = await supabaseClient.auth.getUser(token);
+    const { data, error: userError } = await supabaseClient.auth.getUser(token);
     const user = data.user;
-    if (!user?.email) {
+    if (userError || !user?.email) {
+      console.error("Authentication error:", userError);
       throw new Error("User not authenticated or email not available");
     }
 
@@ -39,7 +40,7 @@ serve(async (req) => {
       throw new Error("Booking ID is required");
     }
 
-    console.log(`Processing payment for booking: ${booking_id} by user: ${user.id}`);
+    console.log(`Processing payment for booking: ${booking_id} by user: ${user.id} (${user.email})`);
 
     // Fetch booking details
     const { data: booking, error: bookingError } = await supabaseClient
