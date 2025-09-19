@@ -363,7 +363,7 @@ const ParentBookingHistory = () => {
                 </CardTitle>
                 <div className="flex gap-2">
                   <Badge variant={getStatusColor(booking.status)}>
-                    {booking.status}
+                    {booking.status === "received_responses" ? "Received Applications" : booking.status}
                   </Badge>
                   <Badge variant={getPaymentStatusColor(booking.payment_status)}>
                     Payment: {booking.payment_status}
