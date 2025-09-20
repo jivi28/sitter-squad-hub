@@ -16,7 +16,6 @@ const About = () => {
     "Student verification through schools",
     "24/7 customer support",
     "Secure payment processing",
-    "Insurance coverage",
     "Real-time booking system"
   ];
 
