@@ -1,26 +1,21 @@
-import { Search, Calendar, Heart, Shield } from "lucide-react";
+import { FileText, Users, CreditCard } from "lucide-react";
 
 const HowItWorks = () => {
   const steps = [
     {
-      icon: Search,
-      title: "Browse Sitters",
-      description: "View profiles of verified student babysitters from local schools with ratings and reviews."
+      icon: FileText,
+      title: "Submit Request",
+      description: "Fill out your babysitting needs and submit your request"
     },
     {
-      icon: Calendar,
-      title: "Book & Schedule",
-      description: "Choose your preferred sitter and book instantly for one-time or recurring childcare needs."
+      icon: Users,
+      title: "Sitters Respond",
+      description: "Available sitters will review and respond to your request"
     },
     {
-      icon: Heart,
-      title: "Enjoy Peace of Mind",
-      description: "Relax knowing your children are in safe hands with background-checked, trusted sitters."
-    },
-    {
-      icon: Shield,
-      title: "Rate & Review",
-      description: "Share your experience to help other families and maintain our high-quality community."
+      icon: CreditCard,
+      title: "Confirm & Pay",
+      description: "Accept a sitter and complete payment to confirm your booking"
     }
   ];
 
@@ -32,11 +27,11 @@ const HowItWorks = () => {
             How It Works
           </h2>
           <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-            Getting reliable childcare is easier than ever with our simple 4-step process
+            Getting reliable childcare is easier than ever with our simple 3-step process
           </p>
         </div>
 
-        <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-8">
+        <div className="grid md:grid-cols-3 gap-8 max-w-4xl mx-auto">
           {steps.map((step, index) => (
             <div key={index} className="text-center group">
               <div className="relative mb-6">
