@@ -205,7 +205,7 @@ const SitterApplications = ({ bookingId, onSitterSelected }: SitterApplicationsP
                 </div>
                 <div className="text-right">
                   <div className="text-2xl font-bold text-primary">
-                    ${application.sitters.hourly_rate}/hr
+                    €{application.sitters.hourly_rate}/hr
                   </div>
                 </div>
               </div>

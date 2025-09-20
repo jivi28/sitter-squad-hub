@@ -251,7 +251,7 @@ const BookingRequests = () => {
                 <div className="flex items-center gap-2">
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                   <span className="font-semibold">
-                    ${calculateCost(request.start_time, request.end_time).toFixed(2)}
+                    €{calculateCost(request.start_time, request.end_time).toFixed(2)}
                   </span>
                   <span className="text-sm text-muted-foreground">
                     ({calculateHours(request.start_time, request.end_time).toFixed(1)}h)
