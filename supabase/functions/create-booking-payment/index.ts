@@ -94,9 +94,9 @@ serve(async (req) => {
       customer: customerId,
       line_items: [
         {
-          price_data: {
-            currency: "usd",
-            product_data: {
+            price_data: {
+              currency: "eur",
+              product_data: {
               name: `Babysitting Service - ${booking.sitter_name}`,
               description: `Booking for ${new Date(booking.booking_date).toLocaleDateString()} from ${booking.start_time} to ${booking.end_time}`,
             },
