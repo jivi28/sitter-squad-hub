@@ -51,8 +51,8 @@ const Index = () => {
     checkProfile();
   }, [user, loading]);
 
-  // TEMP: Show booking section for everyone to debug availability
-  const showBookingSection = true;
+  // Only show booking section for authenticated users with complete profiles
+  const showBookingSection = user && hasCompleteProfile;
 
   if (loading || profileLoading) {
     return (
