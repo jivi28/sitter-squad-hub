@@ -5,10 +5,10 @@ import Header from "@/components/Header";
 
 const About = () => {
   const stats = [
-    { icon: Users, label: "Active Families", value: "500+" },
-    { icon: Award, label: "Verified Sitters", value: "150+" },
+    { icon: Users, label: "Active Families", value: "30+" },
+    { icon: Award, label: "Verified Sitters", value: "20+" },
     { icon: Star, label: "Average Rating", value: "4.9" },
-    { icon: Heart, label: "Hours of Care", value: "10,000+" }
+    { icon: Heart, label: "Hours of Care", value: "10+" }
   ];
 
   const features = [
