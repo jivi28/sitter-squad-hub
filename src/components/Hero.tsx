@@ -100,7 +100,7 @@ const Hero = () => {
               </div>
               <div className="flex items-center space-x-2">
                 <Users className="w-5 h-5 text-primary" />
-                <span className="text-muted-foreground">500+ Families</span>
+                <span className="text-muted-foreground">30+ Families</span>
               </div>
             </div>
           </div>
