@@ -165,7 +165,8 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
               ? `${booking.profiles.first_name} ${booking.profiles.last_name}`
               : 'Parent';
             const address = booking.profiles?.address || '';
-            const { error: emailError } = await supabase.functions.invoke('send-booking-confirmation', {
+            console.log('Attempting to send confirmation email for booking:', booking.id);
+            const { data: emailData, error: emailError } = await supabase.functions.invoke('send-booking-confirmation', {
               body: {
                 bookingId: booking.id,
                 parentUserId: booking.user_id,
@@ -181,6 +182,7 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
                 preferredLanguage: booking.preferred_language
               }
             });
+            console.log('Email function response:', { emailData, emailError });
 
             if (emailError) {
               console.error('Failed to send confirmation email:', emailError);

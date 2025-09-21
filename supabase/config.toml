@@ -21,3 +21,9 @@ verify_jwt = true
 
 [functions.verify-booking-payment]
 verify_jwt = false
+
+[functions.respond-to-booking]
+verify_jwt = true
+
+[functions.notify-available-sitters]
+verify_jwt = true

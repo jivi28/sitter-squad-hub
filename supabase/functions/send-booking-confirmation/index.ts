@@ -38,6 +38,8 @@ const handler = async (req: Request): Promise<Response> => {
 
   try {
     console.log("Booking confirmation email request received");
+    console.log("Request method:", req.method);
+    console.log("Request headers:", Object.fromEntries(req.headers.entries()));
 
     const {
       bookingId,
