@@ -89,8 +89,32 @@ const RequestBasedBookingSystem = () => {
 
       if (bookingError) throw bookingError;
 
-      // TODO: Call edge function to notify available sitters
-      // For now, we'll show success message
+      console.log('Booking created successfully, now notifying sitters:', booking);
+
+      // Call edge function to notify available sitters
+      try {
+        const { data: notificationData, error: notificationError } = await supabase.functions.invoke('notify-available-sitters', {
+          body: {
+            booking_id: booking.id,
+            booking_date: request.date,
+            start_time: request.startTime,
+            end_time: request.endTime,
+            num_children: request.children,
+            special_notes: request.notes,
+            preferred_language: request.preferredLanguage
+          }
+        });
+
+        if (notificationError) {
+          console.error('Error notifying sitters:', notificationError);
+          // Don't throw error here - booking was created successfully
+        } else {
+          console.log('Sitters notified successfully:', notificationData);
+        }
+      } catch (notificationError) {
+        console.error('Error calling notify-available-sitters function:', notificationError);
+        // Don't throw error here - booking was created successfully
+      }
       
       toast({
         title: "Request Submitted!",

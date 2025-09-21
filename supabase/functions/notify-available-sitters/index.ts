@@ -17,6 +17,9 @@ interface NotificationRequest {
   booking_date: string;
   start_time: string;
   end_time: string;
+  num_children?: number;
+  special_notes?: string;
+  preferred_language?: string;
 }
 
 serve(async (req) => {
@@ -31,7 +34,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { booking_id, booking_date, start_time, end_time }: NotificationRequest = await req.json();
+    const { booking_id, booking_date, start_time, end_time, num_children, special_notes, preferred_language }: NotificationRequest = await req.json();
 
     console.log('Processing notification request:', { booking_id, booking_date, start_time, end_time });
 
@@ -75,17 +78,45 @@ serve(async (req) => {
 
     console.log(`Found ${availableSitters.length} available sitters for the requested time`);
 
-    // TODO: Send notifications to available sitters
-    // This could be:
-    // 1. Real-time notifications via Supabase Realtime
-    // 2. Email notifications via Resend
-    // 3. Push notifications
-    // 4. SMS notifications
+    // Send email notifications to available sitters
+    let emailsSent = 0;
+    let emailErrors = 0;
     
-    // For now, we'll log the available sitters
     for (const sitter of availableSitters) {
-      console.log(`Would notify sitter: ${sitter.first_name} ${sitter.last_name} (ID: ${sitter.id})`);
+      try {
+        console.log(`Sending notification email to sitter: ${sitter.first_name} ${sitter.last_name} (User ID: ${sitter.user_id})`);
+        
+        const { data: emailData, error: emailError } = await supabaseClient.functions.invoke('send-booking-notification', {
+          body: {
+            sitterUserId: sitter.user_id,
+            sitterName: `${sitter.first_name} ${sitter.last_name}`,
+            bookingDetails: {
+              booking_id,
+              booking_date,
+              start_time,
+              end_time,
+              num_children: num_children || 1,
+              special_notes,
+              preferred_language
+            },
+            bookingId: booking_id
+          }
+        });
+
+        if (emailError) {
+          console.error(`Error sending email to sitter ${sitter.id}:`, emailError);
+          emailErrors++;
+        } else {
+          console.log(`Email sent successfully to sitter ${sitter.id}`);
+          emailsSent++;
+        }
+      } catch (error) {
+        console.error(`Error processing email for sitter ${sitter.id}:`, error);
+        emailErrors++;
+      }
     }
+
+    console.log(`Email notification summary: ${emailsSent} sent, ${emailErrors} errors`);
 
     // Store which sitters were notified (for future tracking)
     const notificationRecords = availableSitters.map(sitter => ({
@@ -103,8 +134,10 @@ serve(async (req) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Notified ${availableSitters.length} available sitters`,
+        message: `Found ${availableSitters.length} available sitters, sent ${emailsSent} email notifications`,
         available_sitters: availableSitters.length,
+        emailsSent,
+        emailErrors,
         sitters: availableSitters.map(s => ({ 
           id: s.id, 
           name: `${s.first_name} ${s.last_name}` 

@@ -27,3 +27,6 @@ verify_jwt = true
 
 [functions.notify-available-sitters]
 verify_jwt = true
+
+[functions.send-booking-notification]
+verify_jwt = true
