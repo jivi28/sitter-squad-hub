@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -33,10 +33,14 @@ interface BookingStats {
 const ParentDashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [parentProfile, setParentProfile] = useState<ParentProfile | null>(null);
   const [bookingStats, setBookingStats] = useState<BookingStats | null>(null);
   const [dataLoading, setDataLoading] = useState(false);
+  
+  // Get initial tab from URL params, default to "bookings"
+  const initialTab = searchParams.get('tab') || 'bookings';
 
   useEffect(() => {
     // Don't redirect if we're still loading auth state
@@ -211,7 +215,7 @@ const ParentDashboard = () => {
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue="bookings" className="space-y-6">
+        <Tabs defaultValue={initialTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="bookings">My Bookings</TabsTrigger>
             <TabsTrigger value="book-sitter">Book a Sitter</TabsTrigger>

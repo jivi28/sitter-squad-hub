@@ -44,11 +44,8 @@ const Hero = () => {
 
   const handleFindSitterClick = () => {
     if (user && hasCompleteProfile) {
-      // Scroll to booking section
-      const bookingSection = document.getElementById('booking-system');
-      if (bookingSection) {
-        bookingSection.scrollIntoView({ behavior: 'smooth' });
-      }
+      // Redirect to parent dashboard with book-sitter tab selected
+      window.location.href = '/parent-dashboard?tab=book-sitter';
     } else {
       window.location.href = '/parent-signup';
     }
