@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -38,6 +38,7 @@ const ParentDashboard = () => {
   const [parentProfile, setParentProfile] = useState<ParentProfile | null>(null);
   const [bookingStats, setBookingStats] = useState<BookingStats | null>(null);
   const [dataLoading, setDataLoading] = useState(false);
+  const tabsRef = useRef<HTMLDivElement>(null);
   
   // Get initial tab from URL params, default to "bookings"
   const initialTab = searchParams.get('tab') || 'bookings';
@@ -58,6 +59,18 @@ const ParentDashboard = () => {
     console.log('User authenticated, fetching parent data:', user.email);
     fetchParentData();
   }, [user, authLoading, navigate]);
+
+  // Auto-scroll to booking form when coming from homepage
+  useEffect(() => {
+    if (initialTab === 'book-sitter' && !dataLoading && parentProfile && tabsRef.current) {
+      setTimeout(() => {
+        tabsRef.current?.scrollIntoView({ 
+          behavior: 'smooth',
+          block: 'start' 
+        });
+      }, 100);
+    }
+  }, [initialTab, dataLoading, parentProfile]);
 
   const fetchParentData = async () => {
     if (!user) {
@@ -215,7 +228,7 @@ const ParentDashboard = () => {
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs defaultValue={initialTab} className="space-y-6">
+        <Tabs ref={tabsRef} defaultValue={initialTab} className="space-y-6">
           <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="bookings">My Bookings</TabsTrigger>
             <TabsTrigger value="book-sitter">Book a Sitter</TabsTrigger>
