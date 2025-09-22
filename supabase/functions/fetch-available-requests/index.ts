@@ -91,12 +91,12 @@ serve(async (req) => {
       });
     }
 
-    // Get pending, not expired bookings
+    // Get pending and received_responses bookings that haven't expired
     const nowIso = new Date().toISOString();
     const { data: bookings, error: bookingsError } = await supabase
       .from("bookings")
       .select("id, booking_date, start_time, end_time, num_children, total_cost, status, special_notes, preferred_language, user_id, request_expires_at, created_at")
-      .eq("status", "pending")
+      .in("status", ["pending", "received_responses"])
       .gt("request_expires_at", nowIso)
       .order("created_at", { ascending: false });
 

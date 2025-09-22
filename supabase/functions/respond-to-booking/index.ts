@@ -71,13 +71,25 @@ serve(async (req) => {
       throw new Error('Booking request has expired');
     }
 
+    // Check if this sitter has already responded to this booking
+    const { data: existingResponse } = await supabaseClient
+      .from('booking_responses')
+      .select('id')
+      .eq('booking_id', booking_id)
+      .eq('sitter_id', sitter.id)
+      .maybeSingle();
+
+    if (existingResponse) {
+      throw new Error('You have already responded to this booking');
+    }
+
     // Check if this is the first response for this booking
     const { data: existingResponses } = await supabaseClient
       .from('booking_responses')
       .select('id')
       .eq('booking_id', booking_id);
 
-    const isFirstResponse = !existingResponses || existingResponses.length <= 1; // <= 1 because we just inserted one
+    const isFirstResponse = !existingResponses || existingResponses.length === 0;
 
     // Record the response
     const { error: responseError } = await supabaseClient
