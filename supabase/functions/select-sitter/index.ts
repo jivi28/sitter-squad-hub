@@ -105,10 +105,49 @@ serve(async (req) => {
 
     console.log(`Parent selected sitter ${sitter.first_name} ${sitter.last_name} for booking ${booking_id}`);
 
+    // Send booking confirmation email to parent
+    try {
+      console.log('Sending booking confirmation email to parent');
+      
+      // Get parent's profile for address
+      const { data: parentProfile, error: profileError } = await supabaseClient
+        .from('profiles')
+        .select('first_name, last_name, address')
+        .eq('user_id', user.id)
+        .single();
+
+      const { data: emailData, error: emailError } = await supabaseClient.functions.invoke('send-booking-confirmation', {
+        body: {
+          bookingId: booking_id,
+          parentUserId: user.id,
+          parentName: parentProfile ? `${parentProfile.first_name} ${parentProfile.last_name}` : 'Parent',
+          sitterName: `${sitter.first_name} ${sitter.last_name}`,
+          bookingDate: booking.booking_date,
+          startTime: booking.start_time,
+          endTime: booking.end_time,
+          numChildren: booking.num_children,
+          totalCost: totalCost,
+          address: parentProfile?.address || 'Address not provided',
+          specialNotes: booking.special_notes,
+          preferredLanguage: booking.preferred_language
+        }
+      });
+
+      if (emailError) {
+        console.error('Error sending confirmation email:', emailError);
+        // Don't throw error - booking was successful
+      } else {
+        console.log('Confirmation email sent successfully:', emailData);
+      }
+    } catch (emailError) {
+      console.error('Error calling send-booking-confirmation function:', emailError);
+      // Don't throw error - booking was successful
+    }
+
     return new Response(
       JSON.stringify({
         success: true,
-        message: `You've selected ${sitter.first_name} ${sitter.last_name}! Total cost: $${totalCost.toFixed(2)}. You can now proceed with payment.`,
+        message: `You've selected ${sitter.first_name} ${sitter.last_name}! Total cost: €${totalCost.toFixed(2)}. You can now proceed with payment.`,
         booking_status: 'confirmed',
         total_cost: totalCost
       }),

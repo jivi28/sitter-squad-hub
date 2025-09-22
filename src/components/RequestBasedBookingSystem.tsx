@@ -93,6 +93,16 @@ const RequestBasedBookingSystem = () => {
 
       // Call edge function to notify available sitters
       try {
+        console.log('Calling notify-available-sitters function with data:', {
+          booking_id: booking.id,
+          booking_date: request.date,
+          start_time: request.startTime,
+          end_time: request.endTime,
+          num_children: request.children,
+          special_notes: request.notes,
+          preferred_language: request.preferredLanguage
+        });
+
         const { data: notificationData, error: notificationError } = await supabase.functions.invoke('notify-available-sitters', {
           body: {
             booking_id: booking.id,
@@ -107,19 +117,31 @@ const RequestBasedBookingSystem = () => {
 
         if (notificationError) {
           console.error('Error notifying sitters:', notificationError);
-          // Don't throw error here - booking was created successfully
+          console.error('Full error details:', JSON.stringify(notificationError, null, 2));
+          toast({
+            title: "Partial Success",
+            description: "Your booking was created but some sitters might not have been notified. Please check back soon.",
+            variant: "default",
+          });
         } else {
           console.log('Sitters notified successfully:', notificationData);
+          toast({
+            title: "Request Submitted!",
+            description: `Your babysitting request has been sent to ${notificationData?.available_sitters || 0} available sitters. You'll be notified when a sitter accepts your request.`,
+          });
         }
       } catch (notificationError) {
         console.error('Error calling notify-available-sitters function:', notificationError);
-        // Don't throw error here - booking was created successfully
+        console.error('Full error stack:', notificationError);
+        toast({
+          title: "Partial Success", 
+          description: "Your booking was created but sitter notifications failed. Please contact support.",
+          variant: "default",
+        });
       }
       
-      toast({
-        title: "Request Submitted!",
-        description: `Your babysitting request has been sent to available sitters. You'll be notified when a sitter accepts your request.`,
-      });
+      // Remove the original toast that was always shown
+      // Now handled in the notification try/catch blocks above
 
       // Reset form
       setRequest({
