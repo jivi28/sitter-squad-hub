@@ -117,6 +117,37 @@ serve(async (req) => {
     if (response === 'accepted') {
       console.log(`Sitter ${sitter.first_name} ${sitter.last_name} applied for booking ${booking_id}`);
 
+      // Send notification email to parent
+      try {
+        console.log('Sending parent notification email');
+        
+        const { data: notificationData, error: notificationError } = await supabaseClient.functions.invoke('send-parent-notification', {
+          body: {
+            bookingId: booking_id,
+            sitterName: `${sitter.first_name} ${sitter.last_name}`,
+            sitterPhone: sitter.phone,
+            sitterExperience: sitter.experience,
+            sitterHourlyRate: sitter.hourly_rate,
+            parentUserId: booking.user_id,
+            bookingDate: booking.booking_date,
+            startTime: booking.start_time,
+            endTime: booking.end_time,
+            numChildren: booking.num_children,
+            responseMessage: message
+          }
+        });
+
+        if (notificationError) {
+          console.error('Error sending parent notification:', notificationError);
+          // Don't throw error - response was recorded successfully
+        } else {
+          console.log('Parent notification sent successfully:', notificationData);
+        }
+      } catch (notificationError) {
+        console.error('Error calling send-parent-notification function:', notificationError);
+        // Don't throw error - response was recorded successfully
+      }
+
       return new Response(
         JSON.stringify({
           success: true,

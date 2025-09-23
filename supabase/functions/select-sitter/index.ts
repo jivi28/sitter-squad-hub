@@ -105,16 +105,16 @@ serve(async (req) => {
 
     console.log(`Parent selected sitter ${sitter.first_name} ${sitter.last_name} for booking ${booking_id}`);
 
+    // Get parent's profile for address and contact info
+    const { data: parentProfile, error: profileError } = await supabaseClient
+      .from('profiles')
+      .select('first_name, last_name, address, phone, emergency_contact')
+      .eq('user_id', user.id)
+      .single();
+
     // Send booking confirmation email to parent
     try {
       console.log('Sending booking confirmation email to parent');
-      
-      // Get parent's profile for address
-      const { data: parentProfile, error: profileError } = await supabaseClient
-        .from('profiles')
-        .select('first_name, last_name, address')
-        .eq('user_id', user.id)
-        .single();
 
       const { data: emailData, error: emailError } = await supabaseClient.functions.invoke('send-booking-confirmation', {
         body: {
@@ -141,6 +141,40 @@ serve(async (req) => {
       }
     } catch (emailError) {
       console.error('Error calling send-booking-confirmation function:', emailError);
+      // Don't throw error - booking was successful
+    }
+
+    // Send confirmation email to sitter
+    try {
+      console.log('Sending booking confirmation email to sitter');
+
+      const { data: sitterEmailData, error: sitterEmailError } = await supabaseClient.functions.invoke('send-sitter-confirmation', {
+        body: {
+          bookingId: booking_id,
+          sitterUserId: sitter.user_id,
+          sitterName: `${sitter.first_name} ${sitter.last_name}`,
+          parentName: parentProfile ? `${parentProfile.first_name} ${parentProfile.last_name}` : 'Parent',
+          parentPhone: parentProfile?.phone || 'Not provided',
+          parentAddress: parentProfile?.address || 'Address not provided',
+          bookingDate: booking.booking_date,
+          startTime: booking.start_time,
+          endTime: booking.end_time,
+          numChildren: booking.num_children,
+          totalCost: totalCost,
+          specialNotes: booking.special_notes,
+          preferredLanguage: booking.preferred_language,
+          emergencyContact: parentProfile?.emergency_contact
+        }
+      });
+
+      if (sitterEmailError) {
+        console.error('Error sending sitter confirmation email:', sitterEmailError);
+        // Don't throw error - booking was successful
+      } else {
+        console.log('Sitter confirmation email sent successfully:', sitterEmailData);
+      }
+    } catch (sitterEmailError) {
+      console.error('Error calling send-sitter-confirmation function:', sitterEmailError);
       // Don't throw error - booking was successful
     }
 

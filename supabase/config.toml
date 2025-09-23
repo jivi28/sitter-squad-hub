@@ -30,3 +30,9 @@ verify_jwt = true
 
 [functions.send-booking-notification]
 verify_jwt = true
+
+[functions.send-parent-notification]
+verify_jwt = false
+
+[functions.send-sitter-confirmation]
+verify_jwt = false
