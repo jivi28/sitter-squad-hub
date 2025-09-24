@@ -89,7 +89,7 @@ const handler = async (req: Request): Promise<Response> => {
         <p>To respond to this request, log in to your sitter dashboard and accept or decline the booking.</p>
         
         <div style="text-align: center; margin: 30px 0;">
-          <a href="${Deno.env.get("SUPABASE_URL")?.replace('supabase.co', 'supabase.co')}/sitter-dashboard" 
+          <a href="${Deno.env.get("FRONTEND_URL") || 'https://localhost:8080'}/sitter-dashboard" 
              style="background-color: #2563eb; color: white; padding: 12px 24px; text-decoration: none; border-radius: 6px; display: inline-block;">
             View Request
           </a>
