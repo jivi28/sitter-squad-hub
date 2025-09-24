@@ -105,23 +105,6 @@ const About = () => {
               ))}
             </div>
 
-            <div className="mt-16 max-w-4xl mx-auto">
-              <Card className="bg-gradient-hero text-primary-foreground">
-                <CardContent className="p-8 text-center">
-                  <Shield className="w-16 h-16 mx-auto mb-6" />
-                  <h3 className="text-2xl font-bold mb-4">
-                    Safety First Promise
-                  </h3>
-                  <p className="text-primary-foreground/90 mb-6">
-                    Every sitter undergoes comprehensive background checks, reference verification, 
-                    and safety training. We maintain the highest standards to ensure your children's safety.
-                  </p>
-                  <Button variant="secondary" size="lg">
-                    Learn About Our Safety Process
-                  </Button>
-                </CardContent>
-              </Card>
-            </div>
           </div>
         </section>
 
