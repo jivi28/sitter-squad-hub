@@ -81,7 +81,10 @@ const Header = () => {
           </div>
 
           <nav className="hidden md:flex items-center space-x-8">
-            <a href="/#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
+            <a 
+              href={user && userType === 'parent' ? "/parent-dashboard?tab=how-it-works" : "/#how-it-works"} 
+              className="text-muted-foreground hover:text-foreground transition-colors"
+            >
               How it Works
             </a>
             <a href="/about" className="text-muted-foreground hover:text-foreground transition-colors">
@@ -125,7 +128,10 @@ const Header = () => {
         {isMenuOpen && (
           <div className="md:hidden mt-4 pb-4 border-t border-border pt-4">
             <nav className="flex flex-col space-y-4">
-              <a href="/#how-it-works" className="text-muted-foreground hover:text-foreground transition-colors">
+              <a 
+                href={user && userType === 'parent' ? "/parent-dashboard?tab=how-it-works" : "/#how-it-works"} 
+                className="text-muted-foreground hover:text-foreground transition-colors"
+              >
                 How it Works
               </a>
               <a href="/about" className="text-muted-foreground hover:text-foreground transition-colors">
