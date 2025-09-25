@@ -181,6 +181,39 @@ const RequestBasedBookingSystem = () => {
         </div>
 
         <div className="max-w-2xl mx-auto">
+          <div id="how-it-works-section" className="mb-8 text-center">
+            <h3 className="text-lg font-semibold mb-4">How it works:</h3>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="flex flex-col items-center text-center">
+                <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-xl mb-2">
+                  1
+                </div>
+                <h4 className="font-medium mb-2">Submit Request</h4>
+                <p className="text-sm text-muted-foreground">
+                  Fill out your babysitting needs and submit your request
+                </p>
+              </div>
+              <div className="flex flex-col items-center text-center">
+                <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-xl mb-2">
+                  2
+                </div>
+                <h4 className="font-medium mb-2">Sitters Respond</h4>
+                <p className="text-sm text-muted-foreground">
+                  Available sitters will review and respond to your request
+                </p>
+              </div>
+              <div className="flex flex-col items-center text-center">
+                <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-xl mb-2">
+                  3
+                </div>
+                <h4 className="font-medium mb-2">Confirm & Pay</h4>
+                <p className="text-sm text-muted-foreground">
+                  Accept a sitter and complete payment to confirm your booking
+                </p>
+              </div>
+            </div>
+          </div>
+
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center space-x-2">
@@ -320,39 +353,6 @@ const RequestBasedBookingSystem = () => {
               </div>
             </CardContent>
           </Card>
-
-          <div id="how-it-works-section" className="mt-8 text-center">
-            <h3 className="text-lg font-semibold mb-4">How it works:</h3>
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="flex flex-col items-center text-center">
-                <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-xl mb-2">
-                  1
-                </div>
-                <h4 className="font-medium mb-2">Submit Request</h4>
-                <p className="text-sm text-muted-foreground">
-                  Fill out your babysitting needs and submit your request
-                </p>
-              </div>
-              <div className="flex flex-col items-center text-center">
-                <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-xl mb-2">
-                  2
-                </div>
-                <h4 className="font-medium mb-2">Sitters Respond</h4>
-                <p className="text-sm text-muted-foreground">
-                  Available sitters will review and respond to your request
-                </p>
-              </div>
-              <div className="flex flex-col items-center text-center">
-                <div className="w-12 h-12 bg-primary rounded-full flex items-center justify-center text-primary-foreground font-bold text-xl mb-2">
-                  3
-                </div>
-                <h4 className="font-medium mb-2">Confirm & Pay</h4>
-                <p className="text-sm text-muted-foreground">
-                  Accept a sitter and complete payment to confirm your booking
-                </p>
-              </div>
-            </div>
-          </div>
         </div>
       </div>
     </section>
