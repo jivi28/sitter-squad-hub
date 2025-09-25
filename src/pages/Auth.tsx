@@ -29,13 +29,56 @@ const Auth = () => {
     confirmPassword: ""
   });
 
+  const getSmartRedirect = async (userId: string): Promise<string> => {
+    try {
+      // Fetch user's bookings to determine their status
+      const { data: bookings, error } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching bookings:', error);
+        return '/parent-dashboard?tab=book-sitter'; // Default for new users
+      }
+
+      // No bookings = new user, guide to booking
+      if (!bookings || bookings.length === 0) {
+        return '/parent-dashboard?tab=book-sitter';
+      }
+
+      // Check for active bookings that need attention
+      const hasActiveBookings = bookings.some(booking => 
+        booking.status === 'pending' || 
+        booking.status === 'confirmed' || 
+        booking.payment_status === 'pending'
+      );
+
+      // Users with active bookings should see their booking history
+      if (hasActiveBookings) {
+        return '/parent-dashboard?tab=bookings';
+      }
+
+      // Users with only completed bookings can book again
+      return '/parent-dashboard?tab=book-sitter';
+    } catch (error) {
+      console.error('Error in smart redirect:', error);
+      return '/parent-dashboard?tab=book-sitter'; // Safe fallback
+    }
+  };
+
   // Check if user is already logged in
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      if (session) {
-        window.location.href = '/';
+    const checkExistingSession = async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (session?.user) {
+        const redirectUrl = await getSmartRedirect(session.user.id);
+        window.location.href = redirectUrl;
       }
-    });
+    };
+    
+    checkExistingSession();
   }, []);
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -56,7 +99,10 @@ const Auth = () => {
           title: "Success!",
           description: "You have been logged in successfully.",
         });
-        window.location.href = '/';
+        
+        // Get smart redirect based on user's booking status
+        const redirectUrl = await getSmartRedirect(data.user.id);
+        window.location.href = redirectUrl;
       }
     } catch (error: any) {
       console.error('Login error:', error);

@@ -42,10 +42,50 @@ const Hero = () => {
     checkProfile();
   }, [user]);
 
-  const handleFindSitterClick = () => {
+  const getSmartRedirect = async (userId: string): Promise<string> => {
+    try {
+      // Fetch user's bookings to determine their status
+      const { data: bookings, error } = await supabase
+        .from('bookings')
+        .select('*')
+        .eq('user_id', userId)
+        .order('created_at', { ascending: false });
+
+      if (error) {
+        console.error('Error fetching bookings:', error);
+        return '/parent-dashboard?tab=book-sitter'; // Default for new users
+      }
+
+      // No bookings = new user, guide to booking
+      if (!bookings || bookings.length === 0) {
+        return '/parent-dashboard?tab=book-sitter';
+      }
+
+      // Check for active bookings that need attention
+      const hasActiveBookings = bookings.some(booking => 
+        booking.status === 'pending' || 
+        booking.status === 'confirmed' || 
+        booking.payment_status === 'pending'
+      );
+
+      // Users with active bookings should see their booking history
+      if (hasActiveBookings) {
+        return '/parent-dashboard?tab=bookings';
+      }
+
+      // Users with only completed bookings can book again
+      return '/parent-dashboard?tab=book-sitter';
+    } catch (error) {
+      console.error('Error in smart redirect:', error);
+      return '/parent-dashboard?tab=book-sitter'; // Safe fallback
+    }
+  };
+
+  const handleFindSitterClick = async () => {
     if (user && hasCompleteProfile) {
-      // Redirect to parent dashboard with book-sitter tab selected
-      window.location.href = '/parent-dashboard?tab=book-sitter';
+      // Get smart redirect based on user's booking status
+      const redirectUrl = await getSmartRedirect(user.id);
+      window.location.href = redirectUrl;
     } else {
       window.location.href = '/parent-signup';
     }
