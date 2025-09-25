@@ -82,7 +82,7 @@ const Header = () => {
 
           <nav className="hidden md:flex items-center space-x-8">
             <a 
-              href={user && userType === 'parent' ? "/parent-dashboard?tab=how-it-works" : "/#how-it-works"} 
+              href={user && userType === 'parent' ? "/parent-dashboard?tab=book-sitter" : "/#how-it-works"} 
               className="text-muted-foreground hover:text-foreground transition-colors"
             >
               How it Works
@@ -129,7 +129,7 @@ const Header = () => {
           <div className="md:hidden mt-4 pb-4 border-t border-border pt-4">
             <nav className="flex flex-col space-y-4">
               <a 
-                href={user && userType === 'parent' ? "/parent-dashboard?tab=how-it-works" : "/#how-it-works"} 
+                href={user && userType === 'parent' ? "/parent-dashboard?tab=book-sitter" : "/#how-it-works"} 
                 className="text-muted-foreground hover:text-foreground transition-colors"
               >
                 How it Works

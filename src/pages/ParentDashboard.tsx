@@ -10,7 +10,6 @@ import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import ParentBookingHistory from "@/components/ParentBookingHistory";
 import RequestBasedBookingSystem from "@/components/RequestBasedBookingSystem";
-import HowItWorks from "@/components/HowItWorks";
 
 interface ParentProfile {
   id: string;
@@ -63,7 +62,7 @@ const ParentDashboard = () => {
 
   // Auto-scroll to booking form when coming from homepage
   useEffect(() => {
-    if ((initialTab === 'book-sitter' || initialTab === 'how-it-works') && !dataLoading && parentProfile && tabsRef.current) {
+    if (initialTab === 'book-sitter' && !dataLoading && parentProfile && tabsRef.current) {
       setTimeout(() => {
         tabsRef.current?.scrollIntoView({ 
           behavior: 'smooth',
@@ -230,10 +229,9 @@ const ParentDashboard = () => {
 
         {/* Main Content Tabs */}
         <Tabs ref={tabsRef} defaultValue={initialTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-3">
             <TabsTrigger value="bookings">My Bookings</TabsTrigger>
             <TabsTrigger value="book-sitter">Book a Sitter</TabsTrigger>
-            <TabsTrigger value="how-it-works">How it Works</TabsTrigger>
             <TabsTrigger value="profile">Profile</TabsTrigger>
           </TabsList>
 
@@ -255,19 +253,6 @@ const ParentDashboard = () => {
             </Card>
           </TabsContent>
 
-          <TabsContent value="how-it-works">
-            <Card>
-              <CardHeader>
-                <CardTitle>How it Works</CardTitle>
-                <CardDescription>
-                  Learn how our babysitting service works and what to expect.
-                </CardDescription>
-              </CardHeader>
-              <CardContent>
-                <HowItWorks />
-              </CardContent>
-            </Card>
-          </TabsContent>
 
           <TabsContent value="profile">
             <Card>
