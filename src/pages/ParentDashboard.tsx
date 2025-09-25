@@ -62,13 +62,16 @@ const ParentDashboard = () => {
 
   // Auto-scroll to booking form when coming from homepage
   useEffect(() => {
-    if (initialTab === 'book-sitter' && !dataLoading && parentProfile && tabsRef.current) {
+    if (initialTab === 'book-sitter' && !dataLoading && parentProfile) {
       setTimeout(() => {
-        tabsRef.current?.scrollIntoView({ 
-          behavior: 'smooth',
-          block: 'start' 
-        });
-      }, 100);
+        const howItWorksSection = document.getElementById('how-it-works-section');
+        if (howItWorksSection) {
+          howItWorksSection.scrollIntoView({ 
+            behavior: 'smooth',
+            block: 'center' 
+          });
+        }
+      }, 300);
     }
   }, [initialTab, dataLoading, parentProfile]);
 

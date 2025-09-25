@@ -321,7 +321,7 @@ const RequestBasedBookingSystem = () => {
             </CardContent>
           </Card>
 
-          <div className="mt-8 text-center">
+          <div id="how-it-works-section" className="mt-8 text-center">
             <h3 className="text-lg font-semibold mb-4">How it works:</h3>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div className="flex flex-col items-center text-center">
