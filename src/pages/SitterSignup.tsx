@@ -17,6 +17,8 @@ const SchoolSelect = ({ value, onValueChange }: { value: string; onValueChange: 
   const [schools, setSchools] = useState<Array<{ id: string; name: string; short_name: string | null }>>([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState("");
+  const [showCustomInput, setShowCustomInput] = useState(false);
+  const [customSchool, setCustomSchool] = useState("");
 
   useEffect(() => {
     const fetchSchools = async () => {
@@ -38,23 +40,80 @@ const SchoolSelect = ({ value, onValueChange }: { value: string; onValueChange: 
     fetchSchools();
   }, []);
 
+  // Check if current value is a custom school (not in the dropdown list)
+  useEffect(() => {
+    if (value && !schools.some(school => school.name === value)) {
+      setShowCustomInput(true);
+      setCustomSchool(value);
+    }
+  }, [value, schools]);
+
   const filteredSchools = schools.filter(school => 
     school.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
     (school.short_name && school.short_name.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
+  const handleSelectChange = (selectedValue: string) => {
+    if (selectedValue === "custom") {
+      setShowCustomInput(true);
+      setCustomSchool("");
+      onValueChange("");
+    } else {
+      setShowCustomInput(false);
+      setCustomSchool("");
+      onValueChange(selectedValue);
+    }
+  };
+
+  const handleCustomInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const customValue = e.target.value;
+    setCustomSchool(customValue);
+    onValueChange(customValue);
+  };
+
+  if (showCustomInput) {
+    return (
+      <div className="space-y-2">
+        <div className="relative">
+          <Input
+            placeholder="Enter your school/university name"
+            value={customSchool}
+            onChange={handleCustomInputChange}
+            className="pr-10"
+          />
+          <Button
+            type="button"
+            variant="ghost"
+            size="sm"
+            className="absolute right-1 top-1 h-8 px-2 text-muted-foreground hover:text-foreground"
+            onClick={() => {
+              setShowCustomInput(false);
+              setCustomSchool("");
+              onValueChange("");
+            }}
+          >
+            Cancel
+          </Button>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          Enter the full name of your school or university
+        </p>
+      </div>
+    );
+  }
+
   return (
-    <Select value={value} onValueChange={onValueChange}>
+    <Select value={value} onValueChange={handleSelectChange}>
       <SelectTrigger>
         <SelectValue placeholder="Select your school/university" />
       </SelectTrigger>
-      <SelectContent>
+      <SelectContent className="bg-background border shadow-lg z-50">
         <div className="p-2 border-b">
           <div className="relative">
             <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
             <input
               placeholder="Search schools..."
-              className="w-full pl-8 pr-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              className="w-full pl-8 pr-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary bg-background"
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
@@ -62,21 +121,27 @@ const SchoolSelect = ({ value, onValueChange }: { value: string; onValueChange: 
         </div>
         {loading ? (
           <div className="p-4 text-center text-sm text-muted-foreground">Loading schools...</div>
-        ) : filteredSchools.length === 0 ? (
-          <div className="p-4 text-center text-sm text-muted-foreground">
-            {searchTerm ? "No schools found matching your search" : "No schools available"}
-          </div>
         ) : (
-          filteredSchools.map((school) => (
-            <SelectItem key={school.id} value={school.name}>
-              <div className="flex flex-col">
-                <span>{school.name}</span>
-                {school.short_name && (
-                  <span className="text-xs text-muted-foreground">({school.short_name})</span>
-                )}
-              </div>
-            </SelectItem>
-          ))
+          <>
+            {filteredSchools.map((school) => (
+              <SelectItem key={school.id} value={school.name}>
+                <div className="flex flex-col">
+                  <span>{school.name}</span>
+                  {school.short_name && (
+                    <span className="text-xs text-muted-foreground">({school.short_name})</span>
+                  )}
+                </div>
+              </SelectItem>
+            ))}
+            <div className="border-t mt-2 pt-2">
+              <SelectItem value="custom" className="font-medium text-primary">
+                <div className="flex items-center gap-2">
+                  <span>My school is not listed</span>
+                  <span className="text-xs text-muted-foreground">(Enter custom)</span>
+                </div>
+              </SelectItem>
+            </div>
+          </>
         )}
       </SelectContent>
     </Select>
