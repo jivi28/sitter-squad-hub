@@ -56,9 +56,10 @@ const SchoolSelect = ({ value, onValueChange }: { value: string; onValueChange: 
   const handleSelectChange = (selectedValue: string) => {
     if (selectedValue === "custom") {
       setShowCustomInput(true);
-      // Preserve existing value if it's already a custom school
-      if (!customSchool && value && !schools.some(school => school.name === value)) {
-        setCustomSchool(value);
+      // Preserve what the user was typing in the search field
+      if (!customSchool) {
+        const preservedText = searchTerm.trim() || value || "";
+        setCustomSchool(preservedText);
       }
     } else {
       setShowCustomInput(false);
