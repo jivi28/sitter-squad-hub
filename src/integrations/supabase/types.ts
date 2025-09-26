@@ -193,6 +193,33 @@ export type Database = {
         }
         Relationships: []
       }
+      schools: {
+        Row: {
+          city: string
+          created_at: string
+          id: string
+          name: string
+          short_name: string | null
+          type: string
+        }
+        Insert: {
+          city?: string
+          created_at?: string
+          id?: string
+          name: string
+          short_name?: string | null
+          type?: string
+        }
+        Update: {
+          city?: string
+          created_at?: string
+          id?: string
+          name?: string
+          short_name?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
       sitters: {
         Row: {
           address: string

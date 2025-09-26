@@ -6,11 +6,82 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { GraduationCap, DollarSign, Calendar, AlertCircle, Loader2, Languages } from "lucide-react";
+import { GraduationCap, DollarSign, Calendar, AlertCircle, Loader2, Languages, Search } from "lucide-react";
 import Header from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+
+// School selector component
+const SchoolSelect = ({ value, onValueChange }: { value: string; onValueChange: (value: string) => void }) => {
+  const [schools, setSchools] = useState<Array<{ id: string; name: string; short_name: string | null }>>([]);
+  const [loading, setLoading] = useState(true);
+  const [searchTerm, setSearchTerm] = useState("");
+
+  useEffect(() => {
+    const fetchSchools = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('schools')
+          .select('id, name, short_name')
+          .order('name');
+        
+        if (error) throw error;
+        setSchools(data || []);
+      } catch (error) {
+        console.error('Error fetching schools:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchSchools();
+  }, []);
+
+  const filteredSchools = schools.filter(school => 
+    school.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (school.short_name && school.short_name.toLowerCase().includes(searchTerm.toLowerCase()))
+  );
+
+  return (
+    <Select value={value} onValueChange={onValueChange}>
+      <SelectTrigger>
+        <SelectValue placeholder="Select your school/university" />
+      </SelectTrigger>
+      <SelectContent>
+        <div className="p-2 border-b">
+          <div className="relative">
+            <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+            <input
+              placeholder="Search schools..."
+              className="w-full pl-8 pr-3 py-2 text-sm border rounded-md focus:outline-none focus:ring-2 focus:ring-primary"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
+          </div>
+        </div>
+        {loading ? (
+          <div className="p-4 text-center text-sm text-muted-foreground">Loading schools...</div>
+        ) : filteredSchools.length === 0 ? (
+          <div className="p-4 text-center text-sm text-muted-foreground">
+            {searchTerm ? "No schools found matching your search" : "No schools available"}
+          </div>
+        ) : (
+          filteredSchools.map((school) => (
+            <SelectItem key={school.id} value={school.name}>
+              <div className="flex flex-col">
+                <span>{school.name}</span>
+                {school.short_name && (
+                  <span className="text-xs text-muted-foreground">({school.short_name})</span>
+                )}
+              </div>
+            </SelectItem>
+          ))
+        )}
+      </SelectContent>
+    </Select>
+  );
+};
 
 const SitterSignup = () => {
   const { user, loading: authLoading } = useAuth();
@@ -368,13 +439,9 @@ const SitterSignup = () => {
                         </div>
                         <div className="space-y-2">
                           <Label htmlFor="school">School/University *</Label>
-                          <Input
-                            id="school"
-                            name="school"
+                          <SchoolSelect 
                             value={formData.school}
-                            onChange={handleInputChange}
-                            placeholder="Enter your school name"
-                            required
+                            onValueChange={(value) => handleSelectChange("school", value)}
                           />
                         </div>
                       </div>

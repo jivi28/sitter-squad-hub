@@ -22,6 +22,7 @@ interface SitterApplication {
     languages: string[] | null;
     child_age_groups: any;
     special_skills: string | null;
+    school: string;
   };
 }
 
@@ -65,7 +66,7 @@ const SitterApplications = ({ bookingId, onSitterSelected }: SitterApplicationsP
             .from("sitters")
             .select(`
               id, first_name, last_name, hourly_rate, experience, 
-              languages, child_age_groups, special_skills
+              languages, child_age_groups, special_skills, school
             `)
             .eq("id", application.sitter_id)
             .single();
@@ -197,9 +198,16 @@ const SitterApplications = ({ bookingId, onSitterSelected }: SitterApplicationsP
                     <CardTitle className="text-lg">
                       {application.sitters.first_name} {application.sitters.last_name}
                     </CardTitle>
-                    <CardDescription className="flex items-center gap-2">
-                      <Clock className="h-4 w-4" />
-                      {formatTimeAgo(application.created_at)}
+                    <CardDescription className="space-y-1">
+                      <div className="flex items-center gap-2">
+                        <Badge variant="secondary" className="bg-primary/10 text-primary font-medium">
+                          {application.sitters.school}
+                        </Badge>
+                      </div>
+                      <div className="flex items-center gap-2 text-muted-foreground">
+                        <Clock className="h-4 w-4" />
+                        {formatTimeAgo(application.created_at)}
+                      </div>
                     </CardDescription>
                   </div>
                 </div>
