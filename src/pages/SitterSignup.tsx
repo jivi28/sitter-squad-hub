@@ -56,8 +56,10 @@ const SchoolSelect = ({ value, onValueChange }: { value: string; onValueChange: 
   const handleSelectChange = (selectedValue: string) => {
     if (selectedValue === "custom") {
       setShowCustomInput(true);
-      setCustomSchool("");
-      onValueChange("");
+      // Preserve existing value if it's already a custom school
+      if (!customSchool && value && !schools.some(school => school.name === value)) {
+        setCustomSchool(value);
+      }
     } else {
       setShowCustomInput(false);
       setCustomSchool("");
@@ -73,13 +75,13 @@ const SchoolSelect = ({ value, onValueChange }: { value: string; onValueChange: 
 
   if (showCustomInput) {
     return (
-      <div className="space-y-2">
+      <div className="space-y-3">
         <div className="relative">
           <Input
             placeholder="Enter your school/university name"
             value={customSchool}
             onChange={handleCustomInputChange}
-            className="pr-10"
+            className="pr-20"
           />
           <Button
             type="button"
@@ -95,7 +97,7 @@ const SchoolSelect = ({ value, onValueChange }: { value: string; onValueChange: 
             Cancel
           </Button>
         </div>
-        <p className="text-xs text-muted-foreground">
+        <p className="text-sm text-muted-foreground mt-1">
           Enter the full name of your school or university
         </p>
       </div>
