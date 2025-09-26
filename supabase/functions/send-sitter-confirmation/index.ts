@@ -1,5 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
-import { Resend } from "npm:resend@2.0.0";
+import { Resend } from "https://esm.sh/resend@2.0.0";
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
 const resend = new Resend(Deno.env.get("RESEND_API_KEY"));
@@ -192,7 +192,7 @@ const handler = async (req: Request): Promise<Response> => {
 
     if (emailResponse.error) {
       console.error("Resend error:", emailResponse.error);
-      throw { message: emailResponse.error.error || "Failed to send email", statusCode: emailResponse.error.statusCode || 500 };
+      throw { message: emailResponse.error.message || "Failed to send email", statusCode: 500 };
     }
 
     console.log("Sitter confirmation email sent successfully:", emailResponse.data);

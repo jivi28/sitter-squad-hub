@@ -43,7 +43,7 @@ serve(async (req) => {
       status: 'complete'
     });
 
-    const matchingSession = sessions.data.find(session => 
+    const matchingSession = sessions.data.find((session: any) => 
       session.metadata?.booking_id === booking_id && session.payment_status === 'paid'
     );
 
@@ -81,9 +81,9 @@ serve(async (req) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 200,
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Error verifying payment:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    return new Response(JSON.stringify({ error: error.message || "Unknown error" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
       status: 500,
     });

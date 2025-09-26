@@ -176,7 +176,7 @@ serve(async (req) => {
       );
     }
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error in respond-to-booking function:', error);
     return new Response(
       JSON.stringify({ 
