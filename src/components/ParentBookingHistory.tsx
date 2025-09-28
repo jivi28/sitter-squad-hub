@@ -10,6 +10,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import { MobileDatePicker } from "@/components/ui/mobile-date-picker";
 import SitterApplications from "./SitterApplications";
 
 interface Booking {
@@ -462,16 +463,17 @@ const ParentBookingHistory = () => {
                       <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <Label htmlFor="booking_date">Date</Label>
-                            <Input
-                              id="booking_date"
-                              type="date"
+                            <MobileDatePicker
                               value={rebookData.booking_date}
-                              onChange={(e) => setRebookData(prev => ({
+                              onChange={(value) => setRebookData(prev => ({
                                 ...prev,
-                                booking_date: e.target.value
+                                booking_date: value
                               }))}
-                              min={new Date().toISOString().split('T')[0]}
+                              label="Date"
+                              id="booking_date"
+                              minYear={new Date().getFullYear()}
+                              maxYear={new Date().getFullYear() + 1}
+                              required
                             />
                           </div>
                           <div>

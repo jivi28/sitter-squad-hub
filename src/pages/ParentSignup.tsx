@@ -260,8 +260,11 @@ const ParentSignup = () => {
                             id="phone"
                             name="phone"
                             type="tel"
+                            inputMode="tel"
+                            autoComplete="tel"
                             value={formData.phone}
                             onChange={handleInputChange}
+                            placeholder="+1 (555) 123-4567"
                             required
                           />
                         </div>
@@ -286,6 +289,7 @@ const ParentSignup = () => {
                             id="numChildren"
                             name="numChildren"
                             type="number"
+                            inputMode="numeric"
                             min="1"
                             max="5"
                             value={formData.numChildren}

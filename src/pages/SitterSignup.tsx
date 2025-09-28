@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { MobileDatePicker } from "@/components/ui/mobile-date-picker";
 import { GraduationCap, DollarSign, Calendar, AlertCircle, Loader2, Languages, Search } from "lucide-react";
 import Header from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
@@ -486,25 +487,26 @@ const SitterSignup = () => {
                             id="phone"
                             name="phone"
                             type="tel"
+                            inputMode="tel"
+                            autoComplete="tel"
                             value={formData.phone}
                             onChange={handleInputChange}
+                            placeholder="+1 (555) 123-4567"
                             required
                           />
                         </div>
                       </div>
 
                       <div className="grid md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="dateOfBirth">Date of Birth *</Label>
-                          <Input
-                            id="dateOfBirth"
-                            name="dateOfBirth"
-                            type="date"
-                            value={formData.dateOfBirth}
-                            onChange={handleInputChange}
-                            required
-                          />
-                        </div>
+                        <MobileDatePicker
+                          value={formData.dateOfBirth}
+                          onChange={(value) => handleSelectChange("dateOfBirth", value)}
+                          label="Date of Birth *"
+                          id="dateOfBirth"
+                          minYear={2000}
+                          maxYear={2010}
+                          required
+                        />
                         <div className="space-y-2">
                           <Label htmlFor="school">School/University *</Label>
                           <SchoolSelect 
@@ -536,6 +538,7 @@ const SitterSignup = () => {
                             id="hourlyRate"
                             name="hourlyRate"
                             type="number"
+                            inputMode="numeric"
                             min="5"
                             max="30"
                             value={formData.hourlyRate}

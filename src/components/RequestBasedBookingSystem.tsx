@@ -5,6 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { MobileDatePicker } from "@/components/ui/mobile-date-picker";
 import { Calendar, Clock, Users, Loader2, Languages, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -224,13 +225,14 @@ const RequestBasedBookingSystem = () => {
             <CardContent className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <Label htmlFor="date">Date *</Label>
-                  <Input 
-                    type="date" 
-                    id="date" 
+                  <MobileDatePicker
                     value={request.date}
-                    onChange={(e) => updateRequest("date", e.target.value)}
-                    min={new Date().toISOString().split('T')[0]}
+                    onChange={(value) => updateRequest("date", value)}
+                    label="Date *"
+                    id="date"
+                    minYear={new Date().getFullYear()}
+                    maxYear={new Date().getFullYear() + 1}
+                    required
                   />
                 </div>
                 
@@ -238,6 +240,7 @@ const RequestBasedBookingSystem = () => {
                   <Label htmlFor="children">Number of Children *</Label>
                   <Input 
                     type="number" 
+                    inputMode="numeric"
                     id="children" 
                     min="1" 
                     max="5" 
