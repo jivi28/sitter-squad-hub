@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { MobileDatePicker } from "@/components/ui/mobile-date-picker";
+import { MobileTimePicker } from "@/components/ui/mobile-time-picker";
 import SitterApplications from "./SitterApplications";
 
 interface Booking {
@@ -476,26 +477,25 @@ const ParentBookingHistory = () => {
                               required
                             />
                           </div>
-                          <div>
-                            <Label>Time Range</Label>
-                            <div className="flex gap-2">
-                              <Input
-                                type="time"
-                                value={rebookData.start_time}
-                                onChange={(e) => setRebookData(prev => ({
-                                  ...prev,
-                                  start_time: e.target.value
-                                }))}
-                              />
-                              <Input
-                                type="time"
-                                value={rebookData.end_time}
-                                onChange={(e) => setRebookData(prev => ({
-                                  ...prev,
-                                  end_time: e.target.value
-                                }))}
-                              />
-                            </div>
+                          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <MobileTimePicker 
+                              value={rebookData.start_time}
+                              onChange={(value) => setRebookData(prev => ({
+                                ...prev,
+                                start_time: value
+                              }))}
+                              label="Start Time"
+                              required
+                            />
+                            <MobileTimePicker 
+                              value={rebookData.end_time}
+                              onChange={(value) => setRebookData(prev => ({
+                                ...prev,
+                                end_time: value
+                              }))}
+                              label="End Time"
+                              required
+                            />
                           </div>
                         </div>
                         <div>

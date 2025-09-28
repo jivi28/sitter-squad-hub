@@ -6,6 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MobileDatePicker } from "@/components/ui/mobile-date-picker";
+import { MobileTimePicker } from "@/components/ui/mobile-time-picker";
 import { Calendar, Clock, Users, Loader2, Languages, Send } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
@@ -250,25 +251,21 @@ const RequestBasedBookingSystem = () => {
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <Label htmlFor="start-time">Start Time *</Label>
-                  <Input 
-                    type="time" 
-                    id="start-time" 
-                    value={request.startTime}
-                    onChange={(e) => updateRequest("startTime", e.target.value)}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="end-time">End Time *</Label>
-                  <Input 
-                    type="time" 
-                    id="end-time" 
-                    value={request.endTime}
-                    onChange={(e) => updateRequest("endTime", e.target.value)}
-                  />
-                </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <MobileTimePicker 
+                  value={request.startTime}
+                  onChange={(value) => updateRequest("startTime", value)}
+                  label="Start Time *"
+                  id="start-time" 
+                  required
+                />
+                <MobileTimePicker 
+                  value={request.endTime}
+                  onChange={(value) => updateRequest("endTime", value)}
+                  label="End Time *"
+                  id="end-time" 
+                  required
+                />
               </div>
 
               <div className="space-y-2">

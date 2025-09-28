@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Calendar, Clock, Plus, X } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { MobileTimePicker } from "@/components/ui/mobile-time-picker";
 
 interface AvailabilitySlot {
   id?: string;
@@ -132,21 +133,18 @@ const AvailabilityManager = ({ sitterId, currentAvailability, onAvailabilityUpda
               </Select>
             </div>
             
-            <div className="space-y-2">
-              <Label>Start Time</Label>
-              <Input
-                type="time"
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <MobileTimePicker 
                 value={newSlot.startTime}
-                onChange={(e) => setNewSlot(prev => ({ ...prev, startTime: e.target.value }))}
+                onChange={(value) => setNewSlot(prev => ({ ...prev, startTime: value }))}
+                label="Start Time"
+                required
               />
-            </div>
-            
-            <div className="space-y-2">
-              <Label>End Time</Label>
-              <Input
-                type="time"
+              <MobileTimePicker 
                 value={newSlot.endTime}
-                onChange={(e) => setNewSlot(prev => ({ ...prev, endTime: e.target.value }))}
+                onChange={(value) => setNewSlot(prev => ({ ...prev, endTime: value }))}
+                label="End Time"
+                required
               />
             </div>
             
