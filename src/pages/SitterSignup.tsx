@@ -6,7 +6,7 @@ import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { MobileDatePicker } from "@/components/ui/mobile-date-picker";
+import { ResponsiveDateInput } from "@/components/ui/responsive-date-input";
 import { GraduationCap, DollarSign, Calendar, AlertCircle, Loader2, Languages, Search } from "lucide-react";
 import Header from "@/components/Header";
 import { useAuth } from "@/hooks/useAuth";
@@ -366,13 +366,12 @@ const SitterSignup = () => {
                       </div>
 
                       <div className="grid md:grid-cols-2 gap-4">
-                        <MobileDatePicker
+                        <ResponsiveDateInput
                           value={formData.dateOfBirth}
                           onChange={(value) => handleSelectChange("dateOfBirth", value)}
                           label="Date of Birth *"
                           id="dateOfBirth"
-                          minYear={2000}
-                          maxYear={2010}
+                          min="2000-01-01"
                           required
                         />
                         <MobileSchoolSelect 

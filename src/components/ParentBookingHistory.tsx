@@ -10,8 +10,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { MobileDatePicker } from "@/components/ui/mobile-date-picker";
-import { MobileTimePicker } from "@/components/ui/mobile-time-picker";
+import { ResponsiveDateInput } from "@/components/ui/responsive-date-input";
+import { ResponsiveTimeInput } from "@/components/ui/responsive-time-input";
 import SitterApplications from "./SitterApplications";
 
 interface Booking {
@@ -464,7 +464,7 @@ const ParentBookingHistory = () => {
                       <div className="space-y-4">
                         <div className="grid grid-cols-2 gap-4">
                           <div>
-                            <MobileDatePicker
+                            <ResponsiveDateInput
                               value={rebookData.booking_date}
                               onChange={(value) => setRebookData(prev => ({
                                 ...prev,
@@ -472,13 +472,12 @@ const ParentBookingHistory = () => {
                               }))}
                               label="Date"
                               id="booking_date"
-                              minYear={new Date().getFullYear()}
-                              maxYear={new Date().getFullYear() + 1}
+                              min={new Date().toISOString().split('T')[0]}
                               required
                             />
                           </div>
                           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                            <MobileTimePicker 
+                            <ResponsiveTimeInput 
                               value={rebookData.start_time}
                               onChange={(value) => setRebookData(prev => ({
                                 ...prev,
@@ -487,7 +486,7 @@ const ParentBookingHistory = () => {
                               label="Start Time"
                               required
                             />
-                            <MobileTimePicker 
+                            <ResponsiveTimeInput 
                               value={rebookData.end_time}
                               onChange={(value) => setRebookData(prev => ({
                                 ...prev,
