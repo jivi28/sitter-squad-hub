@@ -5,8 +5,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { MobileDatePicker } from "@/components/ui/mobile-date-picker";
-import { MobileTimePicker } from "@/components/ui/mobile-time-picker";
+import { ResponsiveDateInput } from "@/components/ui/responsive-date-input";
+import { ResponsiveTimeInput } from "@/components/ui/responsive-time-input";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Calendar, Clock, Users, Loader2, Languages, Send, Baby, Dog } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
@@ -257,13 +257,12 @@ const RequestBasedBookingSystem = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
-                  <MobileDatePicker
+                  <ResponsiveDateInput
                     value={request.date}
                     onChange={(value) => updateRequest("date", value)}
                     label="Date *"
                     id="date"
-                    minYear={new Date().getFullYear()}
-                    maxYear={new Date().getFullYear() + 1}
+                    min={new Date().toISOString().split('T')[0]}
                     required
                   />
                 </div>
@@ -285,14 +284,14 @@ const RequestBasedBookingSystem = () => {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <MobileTimePicker 
+                <ResponsiveTimeInput 
                   value={request.startTime}
                   onChange={(value) => updateRequest("startTime", value)}
                   label="Start Time *"
                   id="start-time" 
                   required
                 />
-                <MobileTimePicker 
+                <ResponsiveTimeInput 
                   value={request.endTime}
                   onChange={(value) => updateRequest("endTime", value)}
                   label="End Time *"
