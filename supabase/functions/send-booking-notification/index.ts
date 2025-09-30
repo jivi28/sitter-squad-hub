@@ -20,6 +20,7 @@ interface BookingNotificationRequest {
   sitterName: string;
   bookingDetails: any;
   bookingId: string;
+  serviceType?: string;
 }
 
 const handler = async (req: Request): Promise<Response> => {
@@ -31,7 +32,7 @@ const handler = async (req: Request): Promise<Response> => {
   try {
     console.log('send-booking-notification function called');
     
-    const { sitterUserId, sitterName, bookingDetails, bookingId }: BookingNotificationRequest = await req.json();
+    const { sitterUserId, sitterName, bookingDetails, bookingId, serviceType = 'babysitting' }: BookingNotificationRequest = await req.json();
     
     console.log('Processing booking notification for:', { sitterUserId, sitterName, bookingId });
 
@@ -66,21 +67,25 @@ const handler = async (req: Request): Promise<Response> => {
       hour12: true,
     });
 
+    const serviceTypeLabel = serviceType === 'pet_sitting' ? 'Pet Sitting' : 'Babysitting';
+    const subjectLine = serviceType === 'pet_sitting' ? 'New Pet Sitting Request Available!' : 'New Babysitting Request Available!';
+    const childrenOrPetsLabel = serviceType === 'pet_sitting' ? 'Pets' : 'Children';
+
     // Create the email content
     const emailHtml = `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
-        <h2 style="color: #2563eb;">New Babysitting Request Available!</h2>
+        <h2 style="color: #2563eb;">${subjectLine}</h2>
         
         <p>Hi ${sitterName},</p>
         
-        <p>A new babysitting request has been posted that matches your availability:</p>
+        <p>A new ${serviceTypeLabel.toLowerCase()} request has been posted that matches your availability:</p>
         
         <div style="background-color: #f8fafc; padding: 20px; border-radius: 8px; margin: 20px 0;">
           <h3 style="margin-top: 0; color: #1e40af;">Booking Details:</h3>
           <ul style="list-style: none; padding: 0;">
             <li style="margin: 8px 0;"><strong>📅 Date:</strong> ${bookingDate}</li>
             <li style="margin: 8px 0;"><strong>🕐 Time:</strong> ${startTime} - ${endTime}</li>
-            <li style="margin: 8px 0;"><strong>👶 Children:</strong> ${bookingDetails.num_children}</li>
+            <li style="margin: 8px 0;"><strong>${serviceType === 'pet_sitting' ? '🐾' : '👶'} ${childrenOrPetsLabel}:</strong> ${bookingDetails.num_children}</li>
             ${bookingDetails.preferred_language ? `<li style="margin: 8px 0;"><strong>🗣️ Language:</strong> ${bookingDetails.preferred_language}</li>` : ''}
             ${bookingDetails.special_notes ? `<li style="margin: 8px 0;"><strong>📝 Special Notes:</strong> ${bookingDetails.special_notes}</li>` : ''}
           </ul>
@@ -112,7 +117,7 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResponse = await resend.emails.send({
       from: `BabySitter Platform <${Deno.env.get("RESEND_FROM_EMAIL") || "onboarding@resend.dev"}>`,
       to: [sitterEmail],
-      subject: "New Babysitting Request Available!",
+      subject: subjectLine,
       html: emailHtml,
     });
 

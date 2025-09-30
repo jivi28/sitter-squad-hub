@@ -67,6 +67,7 @@ export type Database = {
           preferred_language: string | null
           request_expires_at: string | null
           request_sent_at: string | null
+          service_type: string
           sitter_hourly_rate: number | null
           sitter_id: string | null
           sitter_name: string | null
@@ -87,6 +88,7 @@ export type Database = {
           preferred_language?: string | null
           request_expires_at?: string | null
           request_sent_at?: string | null
+          service_type?: string
           sitter_hourly_rate?: number | null
           sitter_id?: string | null
           sitter_name?: string | null
@@ -107,6 +109,7 @@ export type Database = {
           preferred_language?: string | null
           request_expires_at?: string | null
           request_sent_at?: string | null
+          service_type?: string
           sitter_hourly_rate?: number | null
           sitter_id?: string | null
           sitter_name?: string | null
@@ -158,6 +161,8 @@ export type Database = {
           id: string
           last_name: string
           num_children: number
+          num_pets: number | null
+          pet_details: string | null
           phone: string
           special_needs: string | null
           updated_at: string
@@ -172,6 +177,8 @@ export type Database = {
           id?: string
           last_name: string
           num_children: number
+          num_pets?: number | null
+          pet_details?: string | null
           phone: string
           special_needs?: string | null
           updated_at?: string
@@ -186,6 +193,8 @@ export type Database = {
           id?: string
           last_name?: string
           num_children?: number
+          num_pets?: number | null
+          pet_details?: string | null
           phone?: string
           special_needs?: string | null
           updated_at?: string
@@ -235,6 +244,7 @@ export type Database = {
           id: string
           languages: string[] | null
           last_name: string
+          pet_experience: string | null
           phone: string
           reference_contacts: string | null
           school: string
@@ -258,6 +268,7 @@ export type Database = {
           id?: string
           languages?: string[] | null
           last_name: string
+          pet_experience?: string | null
           phone: string
           reference_contacts?: string | null
           school: string
@@ -281,6 +292,7 @@ export type Database = {
           id?: string
           languages?: string[] | null
           last_name?: string
+          pet_experience?: string | null
           phone?: string
           reference_contacts?: string | null
           school?: string

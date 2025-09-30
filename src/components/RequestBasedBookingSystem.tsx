@@ -7,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { MobileDatePicker } from "@/components/ui/mobile-date-picker";
 import { MobileTimePicker } from "@/components/ui/mobile-time-picker";
-import { Calendar, Clock, Users, Loader2, Languages, Send } from "lucide-react";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Calendar, Clock, Users, Loader2, Languages, Send, Baby, Dog } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +20,7 @@ interface BookingRequest {
   children: number;
   notes: string;
   preferredLanguage: string;
+  serviceType: 'babysitting' | 'pet_sitting';
 }
 
 const RequestBasedBookingSystem = () => {
@@ -31,7 +33,8 @@ const RequestBasedBookingSystem = () => {
     endTime: "",
     children: 1,
     notes: "",
-    preferredLanguage: ""
+    preferredLanguage: "",
+    serviceType: 'babysitting'
   });
 
   const calculateHours = () => {
@@ -85,6 +88,7 @@ const RequestBasedBookingSystem = () => {
           status: 'pending',
           payment_status: 'pending',
           request_expires_at: requestExpiresAt.toISOString(),
+          service_type: request.serviceType,
         })
         .select()
         .single();
@@ -113,7 +117,8 @@ const RequestBasedBookingSystem = () => {
             end_time: request.endTime,
             num_children: request.children,
             special_notes: request.notes,
-            preferred_language: request.preferredLanguage
+            preferred_language: request.preferredLanguage,
+            service_type: request.serviceType
           }
         });
 
@@ -127,9 +132,10 @@ const RequestBasedBookingSystem = () => {
           });
         } else {
           console.log('Sitters notified successfully:', notificationData);
+          const serviceLabel = request.serviceType === 'pet_sitting' ? 'pet sitting' : 'babysitting';
           toast({
             title: "Request Submitted!",
-            description: `Your babysitting request has been sent to ${notificationData?.available_sitters || 0} available sitters. You'll be notified when a sitter accepts your request.`,
+            description: `Your ${serviceLabel} request has been sent to ${notificationData?.available_sitters || 0} available sitters. You'll be notified when a sitter accepts your request.`,
           });
         }
       } catch (notificationError) {
@@ -152,7 +158,8 @@ const RequestBasedBookingSystem = () => {
         endTime: "",
         children: 1,
         notes: "",
-        preferredLanguage: ""
+        preferredLanguage: "",
+        serviceType: 'babysitting'
       });
 
     } catch (error: any) {
@@ -224,6 +231,30 @@ const RequestBasedBookingSystem = () => {
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
+              <div className="space-y-2">
+                <Label>Service Type *</Label>
+                <RadioGroup 
+                  value={request.serviceType} 
+                  onValueChange={(value) => updateRequest("serviceType", value as 'babysitting' | 'pet_sitting')}
+                  className="flex gap-4"
+                >
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="babysitting" id="babysitting" />
+                    <Label htmlFor="babysitting" className="flex items-center gap-2 cursor-pointer">
+                      <Baby className="w-4 h-4" />
+                      Babysitting
+                    </Label>
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    <RadioGroupItem value="pet_sitting" id="pet_sitting" />
+                    <Label htmlFor="pet_sitting" className="flex items-center gap-2 cursor-pointer">
+                      <Dog className="w-4 h-4" />
+                      Pet Sitting
+                    </Label>
+                  </div>
+                </RadioGroup>
+              </div>
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div className="space-y-2">
                   <MobileDatePicker
@@ -238,7 +269,9 @@ const RequestBasedBookingSystem = () => {
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="children">Number of Children *</Label>
+                  <Label htmlFor="children">
+                    {request.serviceType === 'babysitting' ? 'Number of Children *' : 'Number of Pets *'}
+                  </Label>
                   <Input 
                     type="number" 
                     inputMode="numeric"
@@ -302,7 +335,11 @@ const RequestBasedBookingSystem = () => {
                 <Label htmlFor="notes">Special Notes or Requirements (Optional)</Label>
                 <Textarea 
                   id="notes" 
-                  placeholder="Any special instructions, requirements, or information about your children..."
+                  placeholder={
+                    request.serviceType === 'babysitting' 
+                      ? "Any special instructions, requirements, or information about your children..."
+                      : "Any special instructions, requirements, or information about your pets..."
+                  }
                   value={request.notes}
                   onChange={(e) => updateRequest("notes", e.target.value)}
                   rows={4}

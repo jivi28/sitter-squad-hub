@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Users, DollarSign, MapPin, Loader2, Languages, CheckCircle, XCircle } from "lucide-react";
+import { Calendar, Clock, Users, DollarSign, MapPin, Loader2, Languages, CheckCircle, XCircle, Baby, Dog } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -22,6 +22,7 @@ interface BookingRequest {
   user_id: string;
   request_expires_at: string | null;
   created_at: string;
+  service_type: string;
   profiles?: {
     first_name: string;
     last_name: string;
@@ -218,13 +219,16 @@ const BookingRequests = () => {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle className="flex items-center gap-2">
-                  <Users className="h-5 w-5" />
+                  {request.service_type === 'pet_sitting' ? <Dog className="h-5 w-5" /> : <Baby className="h-5 w-5" />}
                   {request.profiles ? 
                     `${request.profiles.first_name} ${request.profiles.last_name}` : 
-                    "Parent"
+                    (request.service_type === 'pet_sitting' ? "Pet Owner" : "Parent")
                   }
                 </CardTitle>
                 <div className="flex gap-2">
+                  <Badge variant="default">
+                    {request.service_type === 'pet_sitting' ? 'Pet Sitting' : 'Babysitting'}
+                  </Badge>
                   <Badge variant="outline">
                     {request.request_expires_at && getTimeUntilExpiry(request.request_expires_at)}
                   </Badge>
@@ -245,8 +249,8 @@ const BookingRequests = () => {
                   </span>
                 </div>
                 <div className="flex items-center gap-2">
-                  <Users className="h-4 w-4 text-muted-foreground" />
-                  <span>{request.num_children} children</span>
+                  {request.service_type === 'pet_sitting' ? <Dog className="h-4 w-4 text-muted-foreground" /> : <Users className="h-4 w-4 text-muted-foreground" />}
+                  <span>{request.num_children} {request.service_type === 'pet_sitting' ? 'pets' : 'children'}</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <DollarSign className="h-4 w-4 text-muted-foreground" />

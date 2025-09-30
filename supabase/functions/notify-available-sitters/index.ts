@@ -20,6 +20,7 @@ interface NotificationRequest {
   num_children?: number;
   special_notes?: string;
   preferred_language?: string;
+  service_type?: string;
 }
 
 serve(async (req) => {
@@ -34,7 +35,7 @@ serve(async (req) => {
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
-    const { booking_id, booking_date, start_time, end_time, num_children, special_notes, preferred_language }: NotificationRequest = await req.json();
+    const { booking_id, booking_date, start_time, end_time, num_children, special_notes, preferred_language, service_type = 'babysitting' }: NotificationRequest = await req.json();
 
     console.log('Processing notification request:', { booking_id, booking_date, start_time, end_time });
 
@@ -99,7 +100,8 @@ serve(async (req) => {
               special_notes,
               preferred_language
             },
-            bookingId: booking_id
+            bookingId: booking_id,
+            serviceType: service_type
           }
         });
 

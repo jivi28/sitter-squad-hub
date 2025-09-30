@@ -35,6 +35,7 @@ const SitterSignup = () => {
     address: "",
     hourlyRate: "",
     experience: "",
+    petExperience: "",
     specialSkills: "",
     references: "",
     transportation: "",
@@ -103,6 +104,7 @@ const SitterSignup = () => {
             address: data.address || "",
             hourlyRate: data.hourly_rate?.toString() || "",
             experience: data.experience || "",
+            petExperience: data.pet_experience || "",
             specialSkills: data.special_skills || "",
             references: data.reference_contacts || "",
             transportation: data.transportation || "",
@@ -175,6 +177,7 @@ const SitterSignup = () => {
         address: formData.address,
         hourly_rate: parseInt(formData.hourlyRate),
         experience: formData.experience,
+        pet_experience: formData.petExperience || null,
         special_skills: formData.specialSkills || null,
         reference_contacts: formData.references || null,
         transportation: formData.transportation || null,
@@ -436,6 +439,18 @@ const SitterSignup = () => {
                           className="w-full h-24 px-3 py-2 border border-input rounded-md resize-none text-sm"
                           placeholder="Describe your experience with children, any certifications, etc."
                           required
+                        />
+                      </div>
+
+                      <div className="space-y-2">
+                        <Label htmlFor="petExperience">Pet Sitting Experience (Optional)</Label>
+                        <textarea
+                          id="petExperience"
+                          name="petExperience"
+                          value={formData.petExperience}
+                          onChange={handleInputChange}
+                          className="w-full h-24 px-3 py-2 border border-input rounded-md resize-none text-sm"
+                          placeholder="Describe your experience with pets, types of animals cared for, etc."
                         />
                       </div>
 
