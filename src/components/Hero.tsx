@@ -91,53 +91,53 @@ const Hero = () => {
     }
   };
   return (
-    <section className="bg-gradient-soft py-20">
-      <div className="container mx-auto px-6">
-        <div className="grid lg:grid-cols-2 gap-12 items-center">
-          <div className="space-y-8">
-            <div className="space-y-4">
-              <h1 className="text-5xl lg:text-6xl font-bold text-foreground leading-tight">
+    <section className="bg-gradient-soft py-12 sm:py-16 md:py-20">
+      <div className="container mx-auto px-4 sm:px-6">
+        <div className="grid lg:grid-cols-2 gap-8 md:gap-12 items-center">
+          <div className="space-y-6 sm:space-y-8">
+            <div className="space-y-3 sm:space-y-4">
+              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
                 Trusted School-Based 
                 <span className="text-primary"> Babysitters</span>
               </h1>
-              <p className="text-xl text-muted-foreground leading-relaxed">
+              <p className="text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed">
                 Connect with verified student sitters from your local schools. Safe, reliable, and affordable childcare when you need it most.
               </p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-4">
+            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               {user ? (
-                <Button variant="hero" size="lg" className="text-lg px-8 py-6" onClick={handleFindSitterClick}>
+                <Button variant="hero" size="lg" className="text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 w-full sm:w-auto" onClick={handleFindSitterClick}>
                   Find a Sitter Now
                 </Button>
               ) : (
-                <Button variant="hero" size="lg" className="text-lg px-8 py-6" onClick={() => window.location.href = '/auth'}>
+                <Button variant="hero" size="lg" className="text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 w-full sm:w-auto" onClick={() => window.location.href = '/auth'}>
                   Sign In to Book
                 </Button>
               )}
               {!user && (
-                <Button variant="book" size="lg" className="text-lg px-8 py-6" onClick={() => window.location.href = '/sitter-auth'}>
+                <Button variant="book" size="lg" className="text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 w-full sm:w-auto" onClick={() => window.location.href = '/sitter-auth'}>
                   Become a Sitter
                 </Button>
               )}
             </div>
 
-            <div className="flex items-center space-x-8 pt-4">
-              <div className="flex items-center space-x-2">
-                <div className="flex space-x-1">
+            <div className="flex flex-wrap items-center gap-3 sm:gap-4 md:gap-6 lg:gap-8 pt-2 sm:pt-4">
+              <div className="flex items-center space-x-1.5 sm:space-x-2">
+                <div className="flex space-x-0.5 sm:space-x-1">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-5 h-5 fill-secondary text-secondary" />
+                    <Star key={i} className="w-4 h-4 sm:w-5 sm:h-5 fill-secondary text-secondary" />
                   ))}
                 </div>
-                <span className="text-muted-foreground">4.9/5 Rating</span>
+                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">4.9/5 Rating</span>
               </div>
-              <div className="flex items-center space-x-2">
-                <Shield className="w-5 h-5 text-trust" />
-                <span className="text-muted-foreground">Verified Sitters</span>
+              <div className="flex items-center space-x-1.5 sm:space-x-2">
+                <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-trust" />
+                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">Verified Sitters</span>
               </div>
-              <div className="flex items-center space-x-2">
-                <Users className="w-5 h-5 text-primary" />
-                <span className="text-muted-foreground">30+ Families</span>
+              <div className="flex items-center space-x-1.5 sm:space-x-2">
+                <Users className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
+                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">30+ Families</span>
               </div>
             </div>
           </div>

@@ -20,13 +20,13 @@ const HowItWorks = () => {
   ];
 
   return (
-    <section id="how-it-works" className="py-20 bg-background">
-      <div className="container mx-auto px-6">
-        <div className="text-center mb-16">
-          <h2 className="text-4xl font-bold text-foreground mb-4">
+    <section id="how-it-works" className="py-12 sm:py-16 md:py-20 bg-background">
+      <div className="container mx-auto px-4 sm:px-6">
+        <div className="text-center mb-12 sm:mb-16">
+          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-3 sm:mb-4">
             How It Works
           </h2>
-          <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+          <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
             Getting reliable childcare is easier than ever with our simple 3-step process
           </p>
         </div>
@@ -52,23 +52,23 @@ const HowItWorks = () => {
           ))}
         </div>
 
-        <div className="mt-16 text-center">
-          <div className="bg-card p-8 rounded-2xl shadow-card border border-border max-w-4xl mx-auto">
-            <h3 className="text-2xl font-bold text-foreground mb-4">
+        <div className="mt-12 sm:mt-16 text-center">
+          <div className="bg-card p-6 sm:p-8 rounded-2xl shadow-card border border-border max-w-4xl mx-auto">
+            <h3 className="text-xl sm:text-2xl font-bold text-foreground mb-3 sm:mb-4">
               Why Choose BabySit Club?
             </h3>
-            <div className="grid md:grid-cols-3 gap-8 mt-8">
+            <div className="grid sm:grid-cols-3 gap-6 sm:gap-8 mt-6 sm:mt-8">
               <div className="text-center">
-                <div className="text-3xl font-bold text-primary mb-2">€5-25/hr</div>
-                <p className="text-muted-foreground">Affordable Rates</p>
+                <div className="text-2xl sm:text-3xl font-bold text-primary mb-2">€5-25/hr</div>
+                <p className="text-sm sm:text-base text-muted-foreground">Affordable Rates</p>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-trust mb-2">100%</div>
-                <p className="text-muted-foreground">Background Checked</p>
+                <div className="text-2xl sm:text-3xl font-bold text-trust mb-2">100%</div>
+                <p className="text-sm sm:text-base text-muted-foreground">Background Checked</p>
               </div>
               <div className="text-center">
-                <div className="text-3xl font-bold text-secondary mb-2">24/7</div>
-                <p className="text-muted-foreground">Support Available</p>
+                <div className="text-2xl sm:text-3xl font-bold text-secondary mb-2">24/7</div>
+                <p className="text-sm sm:text-base text-muted-foreground">Support Available</p>
               </div>
             </div>
           </div>

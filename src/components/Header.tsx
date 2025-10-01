@@ -71,13 +71,13 @@ const Header = () => {
 
   return (
     <header className="bg-card border-b border-border shadow-card sticky top-0 z-50">
-      <div className="container mx-auto px-6 py-4">
+      <div className="container mx-auto px-4 sm:px-6 py-3 sm:py-4">
         <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-2 cursor-pointer" onClick={handleLogoClick}>
-            <div className="w-8 h-8 bg-gradient-hero rounded-lg flex items-center justify-center">
-              <span className="text-primary-foreground font-bold text-lg">B</span>
+          <div className="flex items-center space-x-1.5 sm:space-x-2 cursor-pointer" onClick={handleLogoClick}>
+            <div className="w-7 h-7 sm:w-8 sm:h-8 bg-gradient-hero rounded-lg flex items-center justify-center flex-shrink-0">
+              <span className="text-primary-foreground font-bold text-base sm:text-lg">B</span>
             </div>
-            <span className="text-2xl font-bold text-foreground">BabySit Club</span>
+            <span className="text-lg sm:text-xl md:text-2xl font-bold text-foreground">BabySit Club</span>
           </div>
 
           <nav className="hidden md:flex items-center space-x-8">
