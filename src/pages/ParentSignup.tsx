@@ -26,6 +26,8 @@ const ParentSignup = () => {
     address: "",
     numChildren: "",
     childrenAges: "",
+    numPets: "",
+    petDetails: "",
     emergencyContact: "",
     specialNeeds: "",
     agreeTerms: false,
@@ -85,6 +87,8 @@ const ParentSignup = () => {
             address: data.address || "",
             numChildren: data.num_children?.toString() || "",
             childrenAges: data.children_ages || "",
+            numPets: data.num_pets?.toString() || "",
+            petDetails: data.pet_details || "",
             emergencyContact: data.emergency_contact || "",
             specialNeeds: data.special_needs || ""
           }));
@@ -131,6 +135,8 @@ const ParentSignup = () => {
         address: formData.address,
         num_children: parseInt(formData.numChildren),
         children_ages: formData.childrenAges,
+        num_pets: formData.numPets ? parseInt(formData.numPets) : 0,
+        pet_details: formData.petDetails || null,
         emergency_contact: formData.emergencyContact || null,
         special_needs: formData.specialNeeds || null
       };
@@ -306,6 +312,33 @@ const ParentSignup = () => {
                             onChange={handleInputChange}
                             placeholder="e.g., 3, 7, 12"
                             required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid md:grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="numPets">Number of Pets (Optional)</Label>
+                          <Input
+                            id="numPets"
+                            name="numPets"
+                            type="number"
+                            inputMode="numeric"
+                            min="0"
+                            max="5"
+                            value={formData.numPets}
+                            onChange={handleInputChange}
+                            placeholder="0"
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="petDetails">Pet Details (Optional)</Label>
+                          <Input
+                            id="petDetails"
+                            name="petDetails"
+                            value={formData.petDetails}
+                            onChange={handleInputChange}
+                            placeholder="e.g., Dog (Max), Cat (Luna)"
                           />
                         </div>
                       </div>

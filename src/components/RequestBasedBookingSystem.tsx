@@ -21,6 +21,10 @@ interface BookingRequest {
   notes: string;
   preferredLanguage: string;
   serviceType: 'babysitting' | 'pet_sitting';
+  petType?: string;
+  petDetails?: string;
+  petCareInstructions?: string;
+  emergencyVet?: string;
 }
 
 const RequestBasedBookingSystem = () => {
@@ -34,7 +38,11 @@ const RequestBasedBookingSystem = () => {
     children: 1,
     notes: "",
     preferredLanguage: "",
-    serviceType: 'babysitting'
+    serviceType: 'babysitting',
+    petType: "",
+    petDetails: "",
+    petCareInstructions: "",
+    emergencyVet: ""
   });
 
   const calculateHours = () => {
@@ -46,10 +54,17 @@ const RequestBasedBookingSystem = () => {
   };
 
   const isRequestComplete = () => {
-    return request.date && 
+    const baseFieldsComplete = request.date && 
            request.startTime && 
            request.endTime && 
            request.children > 0;
+    
+    // For pet sitting, also require pet type
+    if (request.serviceType === 'pet_sitting') {
+      return baseFieldsComplete && request.petType;
+    }
+    
+    return baseFieldsComplete;
   };
 
   const updateRequest = (field: keyof BookingRequest, value: string | number) => {
@@ -159,7 +174,11 @@ const RequestBasedBookingSystem = () => {
         children: 1,
         notes: "",
         preferredLanguage: "",
-        serviceType: 'babysitting'
+        serviceType: 'babysitting',
+        petType: "",
+        petDetails: "",
+        petCareInstructions: "",
+        emergencyVet: ""
       });
 
     } catch (error: any) {
@@ -283,6 +302,67 @@ const RequestBasedBookingSystem = () => {
                 </div>
               </div>
 
+              {request.serviceType === 'pet_sitting' && (
+                <div className="space-y-4 p-4 bg-accent/30 rounded-lg border-2 border-accent transition-all duration-300">
+                  <h3 className="font-semibold text-sm flex items-center gap-2">
+                    <Dog className="w-4 h-4" />
+                    Pet Information
+                  </h3>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="petType">Type of Pet(s) *</Label>
+                    <Select 
+                      value={request.petType} 
+                      onValueChange={(value) => updateRequest("petType", value)}
+                    >
+                      <SelectTrigger id="petType">
+                        <SelectValue placeholder="Select pet type" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="dog">Dog(s)</SelectItem>
+                        <SelectItem value="cat">Cat(s)</SelectItem>
+                        <SelectItem value="dog-cat">Dog(s) & Cat(s)</SelectItem>
+                        <SelectItem value="small-animal">Small Animal (Rabbit, Guinea Pig, etc.)</SelectItem>
+                        <SelectItem value="bird">Bird(s)</SelectItem>
+                        <SelectItem value="other">Other</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="petDetails">Pet Details</Label>
+                    <Input
+                      id="petDetails"
+                      placeholder="e.g., Golden Retriever (Max, 5 years), Tabby Cat (Luna, 2 years)"
+                      value={request.petDetails}
+                      onChange={(e) => updateRequest("petDetails", e.target.value)}
+                    />
+                    <p className="text-xs text-muted-foreground">Breed, name, age, size, temperament</p>
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="petCareInstructions">Special Care Instructions</Label>
+                    <Textarea
+                      id="petCareInstructions"
+                      placeholder="Feeding schedule, medications, behavioral notes, exercise needs..."
+                      value={request.petCareInstructions}
+                      onChange={(e) => updateRequest("petCareInstructions", e.target.value)}
+                      rows={3}
+                    />
+                  </div>
+
+                  <div className="space-y-2">
+                    <Label htmlFor="emergencyVet">Emergency Vet Contact</Label>
+                    <Input
+                      id="emergencyVet"
+                      placeholder="Vet name and phone number"
+                      value={request.emergencyVet}
+                      onChange={(e) => updateRequest("emergencyVet", e.target.value)}
+                    />
+                  </div>
+                </div>
+              )}
+
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <ResponsiveTimeInput 
                   value={request.startTime}
@@ -331,17 +411,19 @@ const RequestBasedBookingSystem = () => {
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="notes">Special Notes or Requirements (Optional)</Label>
+                <Label htmlFor="notes">
+                  {request.serviceType === 'babysitting' ? 'Additional Notes (Optional)' : 'Additional Information (Optional)'}
+                </Label>
                 <Textarea 
                   id="notes" 
                   placeholder={
                     request.serviceType === 'babysitting' 
-                      ? "Any special instructions, requirements, or information about your children..."
-                      : "Any special instructions, requirements, or information about your pets..."
+                      ? "Any other special instructions or information about your children..."
+                      : "Any other information for the pet sitter..."
                   }
                   value={request.notes}
                   onChange={(e) => updateRequest("notes", e.target.value)}
-                  rows={4}
+                  rows={3}
                 />
               </div>
 
