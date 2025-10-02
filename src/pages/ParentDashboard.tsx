@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Loader2, Calendar, Clock, Users, Star } from "lucide-react";
+import { Loader2, Calendar, Clock, Users, Star, TrendingUp, TrendingDown, Euro } from "lucide-react";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import ParentBookingHistory from "@/components/ParentBookingHistory";
@@ -28,6 +29,8 @@ interface BookingStats {
   upcoming_bookings: number;
   completed_bookings: number;
   total_spent: number;
+  spent_this_month: number;
+  spent_last_month: number;
 }
 
 const ParentDashboard = () => {
@@ -38,6 +41,7 @@ const ParentDashboard = () => {
   const [parentProfile, setParentProfile] = useState<ParentProfile | null>(null);
   const [bookingStats, setBookingStats] = useState<BookingStats | null>(null);
   const [dataLoading, setDataLoading] = useState(false);
+  const [spentPeriod, setSpentPeriod] = useState<'month' | 'all'>('all');
   const tabsRef = useRef<HTMLDivElement>(null);
   
   // Get initial tab from URL params, default to "bookings"
@@ -107,7 +111,7 @@ const ParentDashboard = () => {
       // Fetch booking statistics
       const { data: bookings, error: bookingsError } = await supabase
         .from("bookings")
-        .select("status, total_cost, booking_date")
+        .select("status, total_cost, booking_date, payment_status")
         .eq("user_id", user.id);
 
       if (bookingsError) {
@@ -118,6 +122,15 @@ const ParentDashboard = () => {
       console.log('Bookings fetched:', bookings?.length || 0, 'bookings');
 
       const now = new Date();
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
+
+      // Only count completed/paid bookings for spending
+      const paidBookings = bookings?.filter(b => 
+        b.status === 'completed' || b.payment_status === 'paid'
+      ) || [];
+
       const stats: BookingStats = {
         total_bookings: bookings?.length || 0,
         upcoming_bookings: bookings?.filter(b => 
@@ -125,7 +138,16 @@ const ParentDashboard = () => {
           ['pending', 'confirmed'].includes(b.status)
         ).length || 0,
         completed_bookings: bookings?.filter(b => b.status === 'completed').length || 0,
-        total_spent: bookings?.reduce((sum, b) => sum + (Number(b.total_cost) || 0), 0) || 0
+        total_spent: paidBookings.reduce((sum, b) => sum + (Number(b.total_cost) || 0), 0),
+        spent_this_month: paidBookings
+          .filter(b => new Date(b.booking_date) >= startOfMonth)
+          .reduce((sum, b) => sum + (Number(b.total_cost) || 0), 0),
+        spent_last_month: paidBookings
+          .filter(b => {
+            const date = new Date(b.booking_date);
+            return date >= startOfLastMonth && date <= endOfLastMonth;
+          })
+          .reduce((sum, b) => sum + (Number(b.total_cost) || 0), 0)
       };
 
       setParentProfile(profile);
@@ -221,11 +243,45 @@ const ParentDashboard = () => {
 
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Total Spent</CardTitle>
-              <Users className="h-4 w-4 text-muted-foreground" />
+              <CardTitle className="text-sm font-medium">Invested in Care</CardTitle>
+              <Euro className="h-4 w-4 text-muted-foreground" />
             </CardHeader>
             <CardContent>
-              <div className="text-2xl font-bold">€{bookingStats?.total_spent}</div>
+              <div className="flex items-baseline justify-between mb-2">
+                <div className="text-2xl font-bold">
+                  €{spentPeriod === 'month' 
+                    ? bookingStats?.spent_this_month.toFixed(2) 
+                    : bookingStats?.total_spent.toFixed(2)}
+                </div>
+                {spentPeriod === 'month' && bookingStats && (
+                  <div className={`flex items-center text-xs ${
+                    bookingStats.spent_this_month > bookingStats.spent_last_month 
+                      ? 'text-orange-500' 
+                      : 'text-green-500'
+                  }`}>
+                    {bookingStats.spent_this_month > bookingStats.spent_last_month ? (
+                      <TrendingUp className="h-3 w-3 mr-1" />
+                    ) : (
+                      <TrendingDown className="h-3 w-3 mr-1" />
+                    )}
+                    {bookingStats.spent_last_month > 0 
+                      ? Math.abs(
+                          ((bookingStats.spent_this_month - bookingStats.spent_last_month) / 
+                          bookingStats.spent_last_month) * 100
+                        ).toFixed(0)
+                      : '0'}%
+                  </div>
+                )}
+              </div>
+              <Select value={spentPeriod} onValueChange={(val: 'month' | 'all') => setSpentPeriod(val)}>
+                <SelectTrigger className="h-8 text-xs">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="month">This Month</SelectItem>
+                  <SelectItem value="all">All Time</SelectItem>
+                </SelectContent>
+              </Select>
             </CardContent>
           </Card>
         </div>
