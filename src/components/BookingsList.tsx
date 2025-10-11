@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Calendar, Clock, Users, DollarSign, MapPin, Loader2, Languages } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { EmptyState } from "./EmptyState";
 
 interface Booking {
   id: string;
@@ -255,13 +256,17 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
         </CardHeader>
         <CardContent>
           {bookings.length === 0 ? (
-            <div className="text-center py-12">
-              <Calendar className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
-              <h3 className="text-lg font-medium mb-2">No bookings yet</h3>
-              <p className="text-muted-foreground">
-                You'll see your booking requests here once families start booking you!
-              </p>
-            </div>
+            <EmptyState
+              icon={Calendar}
+              title="No Bookings Yet"
+              description="You'll receive bookings here once families book you."
+              tips={[
+                "Make sure your availability is up to date",
+                "Complete your profile with experience and skills",
+                "Be responsive when families reach out",
+                "Weekend and evening slots get more bookings"
+              ]}
+            />
           ) : (
             <div className="space-y-4">
               {bookings.map(booking => (

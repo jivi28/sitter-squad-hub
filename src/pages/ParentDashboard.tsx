@@ -14,6 +14,8 @@ import RequestBasedBookingSystem from "@/components/RequestBasedBookingSystem";
 import { ParentOnboardingModal } from "@/components/ParentOnboardingModal";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { HelpCard } from "@/components/HelpCard";
+import { FavoriteSitters } from "@/components/FavoriteSitters";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 interface ParentProfile {
   id: string;
@@ -296,10 +298,12 @@ const ParentDashboard = () => {
         </div>
 
         {/* Main Content Tabs */}
-        <Tabs ref={tabsRef} defaultValue={initialTab} className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+        <Tabs ref={tabsRef} defaultValue={initialTab} className="space-y-6 pb-20 md:pb-6">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="bookings">My Bookings</TabsTrigger>
-            <TabsTrigger value="book-sitter">Book a Sitter</TabsTrigger>
+            <TabsTrigger value="favorites" className="hidden sm:flex">Favorites</TabsTrigger>
+            <TabsTrigger value="favorites" className="sm:hidden">❤️</TabsTrigger>
+            <TabsTrigger value="book-sitter">Book</TabsTrigger>
             <TabsTrigger value="profile">Profile</TabsTrigger>
           </TabsList>
 
@@ -318,6 +322,10 @@ const ParentDashboard = () => {
               />
               <ParentBookingHistory />
             </div>
+          </TabsContent>
+
+          <TabsContent value="favorites">
+            <FavoriteSitters />
           </TabsContent>
 
           <TabsContent value="book-sitter" id="how-it-works-section">
@@ -399,6 +407,8 @@ const ParentDashboard = () => {
           </TabsContent>
         </Tabs>
       </div>
+      
+      <MobileBottomNav userType="parent" />
     </div>
   );
 };

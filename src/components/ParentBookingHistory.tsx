@@ -16,6 +16,8 @@ import { RequestExpirationTimer } from "./RequestExpirationTimer";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { BookingStatusStepper } from "./BookingStatusStepper";
 import { CollapsibleApplications } from "./CollapsibleApplications";
+import { EmptyState } from "./EmptyState";
+import { useNavigate } from "react-router-dom";
 
 interface Booking {
   id: string;
@@ -350,17 +352,23 @@ const ParentBookingHistory = () => {
     );
   }
 
+  const navigate = useNavigate();
+
   if (bookings.length === 0) {
     return (
-      <Card>
-        <CardContent className="py-8 text-center">
-          <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-semibold mb-2">No Bookings Yet</h3>
-          <p className="text-muted-foreground">
-            When you book a sitter, your booking history will appear here.
-          </p>
-        </CardContent>
-      </Card>
+      <EmptyState
+        icon={Calendar}
+        title="No Bookings Yet"
+        description="Start your journey by booking a trusted sitter for your family."
+        tips={[
+          "Click 'Book a Sitter' to create your first booking request",
+          "Fill in your requirements and available sitters will apply",
+          "You can review sitter profiles before confirming",
+          "Payment is secure and only processed after confirmation"
+        ]}
+        actionLabel="Book Your First Sitter"
+        onAction={() => navigate("/parent-dashboard?tab=book-sitter")}
+      />
     );
   }
 

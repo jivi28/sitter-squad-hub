@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { SitterOnboardingModal } from "@/components/SitterOnboardingModal";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { HelpCard } from "@/components/HelpCard";
+import { MobileBottomNav } from "@/components/MobileBottomNav";
 
 interface SitterProfile {
   id: string;
@@ -175,11 +176,12 @@ const SitterDashboard = () => {
           </div>
 
           {/* Main Content Tabs */}
-          <Tabs defaultValue="requests" className="space-y-6">
-            <TabsList>
-              <TabsTrigger value="requests">New Requests</TabsTrigger>
-              <TabsTrigger value="availability">My Availability</TabsTrigger>
-              <TabsTrigger value="bookings">My Bookings</TabsTrigger>
+          <Tabs defaultValue="requests" className="space-y-6 pb-20 md:pb-6">
+            <TabsList className="grid w-full grid-cols-4">
+              <TabsTrigger value="requests">Requests</TabsTrigger>
+              <TabsTrigger value="availability" className="hidden sm:flex">Availability</TabsTrigger>
+              <TabsTrigger value="availability" className="sm:hidden">Schedule</TabsTrigger>
+              <TabsTrigger value="bookings">Bookings</TabsTrigger>
               <TabsTrigger value="profile">Profile</TabsTrigger>
             </TabsList>
 
@@ -276,6 +278,8 @@ const SitterDashboard = () => {
           </Tabs>
         </div>
       </main>
+      
+      <MobileBottomNav userType="sitter" />
     </div>
   );
 };

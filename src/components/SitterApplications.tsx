@@ -195,8 +195,11 @@ const SitterApplications = ({ bookingId, onSitterSelected }: SitterApplicationsP
                     </AvatarFallback>
                   </Avatar>
                   <div>
-                    <CardTitle className="text-lg">
+                    <CardTitle className="text-lg flex items-center gap-2">
                       {application.sitters.first_name} {application.sitters.last_name}
+                      {(application.sitters as any).pet_experience && (
+                        <Badge variant="secondary" className="text-xs">🐾 Pet Friendly</Badge>
+                      )}
                     </CardTitle>
                     <CardDescription className="space-y-1">
                       <div className="flex items-center gap-2">
