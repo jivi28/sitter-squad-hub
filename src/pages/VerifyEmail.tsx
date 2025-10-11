@@ -232,7 +232,7 @@ const VerifyEmail = () => {
                 <div className="text-center">
                   <Button 
                     variant="ghost" 
-                    onClick={() => window.location.href = isParent ? '/auth' : '/sitter-auth'}
+                    onClick={() => window.location.href = isParent ? '/auth?role=parent' : '/auth?role=sitter'}
                     className="text-sm"
                   >
                     Back to {isParent ? 'Login' : 'Sitter Login'}

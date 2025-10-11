@@ -4,17 +4,25 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { AlertCircle, Loader2 } from "lucide-react";
+import { AlertCircle, Loader2, Baby, Briefcase } from "lucide-react";
 import { Separator } from "@/components/ui/separator";
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
+import { useNavigate, useSearchParams } from "react-router-dom";
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  
+  // Determine role from URL parameter or default to 'parent'
+  const [selectedRole, setSelectedRole] = useState<'parent' | 'sitter'>(
+    (searchParams.get('role') as 'parent' | 'sitter') || 'parent'
+  );
 
   // Login form state
   const [loginData, setLoginData] = useState({
@@ -30,8 +38,25 @@ const Auth = () => {
   });
 
   const getSmartRedirect = async (userId: string): Promise<string> => {
+    // Store role in localStorage for future reference
+    localStorage.setItem('user_role', selectedRole);
+    
+    if (selectedRole === 'sitter') {
+      // Check if sitter has completed profile
+      const { data: sitterData } = await supabase
+        .from('sitters')
+        .select('id, status')
+        .eq('user_id', userId)
+        .maybeSingle();
+      
+      if (!sitterData) {
+        return '/sitter-signup';
+      }
+      return '/sitter-dashboard';
+    }
+    
+    // Parent role logic
     try {
-      // Fetch user's bookings to determine their status
       const { data: bookings, error } = await supabase
         .from('bookings')
         .select('*')
@@ -40,31 +65,27 @@ const Auth = () => {
 
       if (error) {
         console.error('Error fetching bookings:', error);
-        return '/parent-dashboard?tab=book-sitter'; // Default for new users
+        return '/parent-dashboard?tab=book-sitter';
       }
 
-      // No bookings = new user, guide to booking
       if (!bookings || bookings.length === 0) {
         return '/parent-dashboard?tab=book-sitter';
       }
 
-      // Check for active bookings that need attention
       const hasActiveBookings = bookings.some(booking => 
         booking.status === 'pending' || 
         booking.status === 'confirmed' || 
         booking.payment_status === 'pending'
       );
 
-      // Users with active bookings should see their booking history
       if (hasActiveBookings) {
         return '/parent-dashboard?tab=bookings';
       }
 
-      // Users with only completed bookings can book again
       return '/parent-dashboard?tab=book-sitter';
     } catch (error) {
       console.error('Error in smart redirect:', error);
-      return '/parent-dashboard?tab=book-sitter'; // Safe fallback
+      return '/parent-dashboard?tab=book-sitter';
     }
   };
 
@@ -180,10 +201,14 @@ const Auth = () => {
     setError(null);
 
     try {
+      // Store role preference before OAuth redirect
+      localStorage.setItem('pending_role', selectedRole);
+      
+      const redirectPath = selectedRole === 'sitter' ? '/sitter-signup' : '/parent-signup';
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}/parent-signup`
+          redirectTo: `${window.location.origin}${redirectPath}`
         }
       });
 
@@ -209,6 +234,35 @@ const Auth = () => {
               <p className="text-muted-foreground">
                 Sign in to your account or create a new one
               </p>
+            </div>
+
+            {/* Role Selection */}
+            <div className="mb-6 grid grid-cols-2 gap-4">
+              <button
+                onClick={() => setSelectedRole('parent')}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  selectedRole === 'parent'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border bg-card hover:border-primary/50'
+                }`}
+              >
+                <Baby className={`h-8 w-8 mx-auto mb-2 ${selectedRole === 'parent' ? 'text-primary' : 'text-muted-foreground'}`} />
+                <div className="text-sm font-medium">Book a Sitter</div>
+                <div className="text-xs text-muted-foreground">I need childcare</div>
+              </button>
+              
+              <button
+                onClick={() => setSelectedRole('sitter')}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  selectedRole === 'sitter'
+                    ? 'border-primary bg-primary/5'
+                    : 'border-border bg-card hover:border-primary/50'
+                }`}
+              >
+                <Briefcase className={`h-8 w-8 mx-auto mb-2 ${selectedRole === 'sitter' ? 'text-primary' : 'text-muted-foreground'}`} />
+                <div className="text-sm font-medium">Become a Sitter</div>
+                <div className="text-xs text-muted-foreground">I want to earn</div>
+              </button>
             </div>
 
             <Card>

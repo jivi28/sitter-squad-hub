@@ -14,6 +14,7 @@ import { SitterOnboardingModal } from "@/components/SitterOnboardingModal";
 import { useOnboarding } from "@/hooks/useOnboarding";
 import { HelpCard } from "@/components/HelpCard";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+import VerificationBanner from "@/components/VerificationBanner";
 
 interface SitterProfile {
   id: string;
@@ -115,6 +116,12 @@ const SitterDashboard = () => {
       
       <main className="py-8">
         <div className="container mx-auto px-6">
+          {user && !user.email_confirmed_at && (
+            <div className="mb-6">
+              <VerificationBanner userEmail={user.email || ''} />
+            </div>
+          )}
+          
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">
               Welcome, {sitterProfile.first_name}!

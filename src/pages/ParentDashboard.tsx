@@ -16,6 +16,7 @@ import { useOnboarding } from "@/hooks/useOnboarding";
 import { HelpCard } from "@/components/HelpCard";
 import { FavoriteSitters } from "@/components/FavoriteSitters";
 import { MobileBottomNav } from "@/components/MobileBottomNav";
+import VerificationBanner from "@/components/VerificationBanner";
 
 interface ParentProfile {
   id: string;
@@ -211,6 +212,12 @@ const ParentDashboard = () => {
       <ParentOnboardingModal isOpen={showOnboarding} onClose={completeOnboarding} />
       
       <div className="container mx-auto px-4 py-8">
+        {user && !user.email_confirmed_at && (
+          <div className="mb-6">
+            <VerificationBanner userEmail={user.email || ''} />
+          </div>
+        )}
+        
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">
             Welcome back, {parentProfile.first_name}!

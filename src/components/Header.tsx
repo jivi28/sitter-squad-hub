@@ -107,10 +107,10 @@ const Header = () => {
               </>
             ) : (
               <>
-                <Button variant="outline" size="sm" onClick={() => window.location.href = '/auth'}>
+                <Button variant="outline" size="sm" onClick={() => window.location.href = '/auth?role=parent'}>
                   Parent Login
                 </Button>
-                <Button variant="trust" size="sm" onClick={() => window.location.href = '/sitter-signup'}>
+                <Button variant="trust" size="sm" onClick={() => window.location.href = '/auth?role=sitter'}>
                   Sitter Login
                 </Button>
               </>
@@ -154,10 +154,10 @@ const Header = () => {
                 </>
               ) : (
                 <>
-                  <Button variant="outline" size="sm" className="self-start" onClick={() => window.location.href = '/auth'}>
+                  <Button variant="outline" size="sm" className="self-start" onClick={() => window.location.href = '/auth?role=parent'}>
                     Parent Login
                   </Button>
-                  <Button variant="trust" size="sm" className="self-start" onClick={() => window.location.href = '/sitter-signup'}>
+                  <Button variant="trust" size="sm" className="self-start" onClick={() => window.location.href = '/auth?role=sitter'}>
                     Sitter Login
                   </Button>
                 </>

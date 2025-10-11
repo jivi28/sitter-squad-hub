@@ -8,6 +8,8 @@ import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
+import BookingRequestFilters, { FilterValues } from "@/components/BookingRequestFilters";
+import { EmptyState } from "@/components/EmptyState";
 
 interface BookingRequest {
   id: string;
@@ -49,9 +51,37 @@ const BookingRequests = () => {
   const [responseMessage, setResponseMessage] = useState("");
   const [sitter, setSitter] = useState<Sitter | null>(null);
   const [appliedBookings, setAppliedBookings] = useState<string[]>([]);
+  
+  // Filter state
+  const [filters, setFilters] = useState<FilterValues>(() => {
+    // Try to load saved filters from localStorage
+    const userId = localStorage.getItem('user_id');
+    if (userId) {
+      try {
+        const saved = localStorage.getItem(`sitter_request_filters_${userId}`);
+        if (saved) {
+          const parsed = JSON.parse(saved);
+          // Convert date strings back to Date objects
+          if (parsed.dateRange?.from) parsed.dateRange.from = new Date(parsed.dateRange.from);
+          if (parsed.dateRange?.to) parsed.dateRange.to = new Date(parsed.dateRange.to);
+          return parsed;
+        }
+      } catch {}
+    }
+    return {
+      dateRange: { from: undefined, to: undefined },
+      serviceType: 'all' as const,
+      minRate: 0,
+      sortBy: 'date' as const
+    };
+  });
 
   useEffect(() => {
     fetchBookingRequests();
+    // Store user_id for filter persistence
+    supabase.auth.getUser().then(({ data: { user } }) => {
+      if (user) localStorage.setItem('user_id', user.id);
+    });
   }, []);
 
   const fetchBookingRequests = async () => {
@@ -184,6 +214,67 @@ const BookingRequests = () => {
     return `${diffHours} hours left`;
   };
 
+  // Filter and sort requests
+  const filteredRequests = requests.filter(request => {
+    // Date range filter
+    if (filters.dateRange.from) {
+      const bookingDate = new Date(request.booking_date);
+      if (bookingDate < filters.dateRange.from) return false;
+    }
+    if (filters.dateRange.to) {
+      const bookingDate = new Date(request.booking_date);
+      if (bookingDate > filters.dateRange.to) return false;
+    }
+    
+    // Service type filter
+    if (filters.serviceType !== 'all' && request.service_type !== filters.serviceType) {
+      return false;
+    }
+    
+    // Minimum rate filter
+    if (filters.minRate > 0 && sitter) {
+      const estimatedPay = calculateCost(request.start_time, request.end_time);
+      if (estimatedPay < filters.minRate * calculateHours(request.start_time, request.end_time)) {
+        return false;
+      }
+    }
+    
+    return true;
+  }).sort((a, b) => {
+    switch (filters.sortBy) {
+      case 'date':
+        return new Date(a.booking_date).getTime() - new Date(b.booking_date).getTime();
+      case 'pay':
+        return calculateCost(b.start_time, b.end_time) - calculateCost(a.start_time, a.end_time);
+      case 'expires':
+        if (!a.request_expires_at || !b.request_expires_at) return 0;
+        return new Date(a.request_expires_at).getTime() - new Date(b.request_expires_at).getTime();
+      default:
+        return 0;
+    }
+  });
+
+  const handleFiltersChange = (newFilters: FilterValues) => {
+    setFilters(newFilters);
+    // Save to localStorage
+    const userId = localStorage.getItem('user_id');
+    if (userId) {
+      try {
+        localStorage.setItem(`sitter_request_filters_${userId}`, JSON.stringify(newFilters));
+      } catch {}
+    }
+  };
+
+  const handleClearFilters = () => {
+    const defaultFilters: FilterValues = {
+      dateRange: { from: undefined, to: undefined },
+      serviceType: 'all',
+      minRate: 0,
+      sortBy: 'date'
+    };
+    handleFiltersChange(defaultFilters);
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center py-8">
@@ -194,27 +285,57 @@ const BookingRequests = () => {
 
   if (requests.length === 0) {
     return (
-      <Card>
-        <CardContent className="py-8 text-center">
-          <Calendar className="h-12 w-12 mx-auto mb-4 text-muted-foreground" />
-          <h3 className="text-lg font-semibold mb-2">No New Requests</h3>
-          <p className="text-muted-foreground">
-            New booking requests that match your availability will appear here.
-          </p>
-        </CardContent>
-      </Card>
+      <>
+        <BookingRequestFilters 
+          filters={filters} 
+          onFiltersChange={handleFiltersChange}
+          onClearFilters={handleClearFilters}
+        />
+        <EmptyState
+          icon={Calendar}
+          title="No New Requests"
+          description="New booking requests that match your availability will appear here."
+        />
+      </>
+    );
+  }
+
+  if (filteredRequests.length === 0) {
+    return (
+      <>
+        <BookingRequestFilters 
+          filters={filters} 
+          onFiltersChange={handleFiltersChange}
+          onClearFilters={handleClearFilters}
+        />
+        <EmptyState
+          icon={Calendar}
+          title="No Matching Requests"
+          description="No requests match your current filters. Try adjusting your criteria."
+          actionLabel="Clear Filters"
+          onAction={handleClearFilters}
+        />
+      </>
     );
   }
 
   return (
     <div className="space-y-4">
+      <BookingRequestFilters 
+        filters={filters} 
+        onFiltersChange={handleFiltersChange}
+        onClearFilters={handleClearFilters}
+      />
+      
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold">Booking Requests</h2>
-        <Badge variant="secondary">{requests.length} pending</Badge>
+        <Badge variant="secondary">
+          Showing {filteredRequests.length} of {requests.length}
+        </Badge>
       </div>
 
       <div className="grid gap-4">
-        {requests.map((request) => (
+        {filteredRequests.map((request) => (
           <Card key={request.id} className="border-2 border-primary/20 bg-primary/5">
             <CardHeader>
               <div className="flex items-center justify-between">

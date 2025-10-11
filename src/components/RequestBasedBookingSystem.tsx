@@ -72,7 +72,26 @@ const RequestBasedBookingSystem = () => {
   };
 
   const submitRequest = async () => {
-    if (!user || !isRequestComplete()) {
+    if (!user) {
+      toast({
+        title: "Authentication required",
+        description: "Please log in to submit a booking request.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Check email verification
+    if (!user.email_confirmed_at) {
+      toast({
+        title: "Email verification required",
+        description: "Please verify your email address before booking. Check your inbox for the verification link.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (!isRequestComplete()) {
       toast({
         title: "Request incomplete",
         description: "Please fill in all required fields.",
@@ -194,7 +213,8 @@ const RequestBasedBookingSystem = () => {
   };
 
   const estimatedHours = calculateHours();
-  const canSubmit = isRequestComplete() && !isSubmitting;
+  const isEmailVerified = user?.email_confirmed_at != null;
+  const canSubmit = isRequestComplete() && !isSubmitting && isEmailVerified;
 
   return (
     <section id="booking-system" className="py-20 bg-gradient-soft">
@@ -445,11 +465,19 @@ const RequestBasedBookingSystem = () => {
               )}
 
               <div className="pt-4">
+                {!isEmailVerified && (
+                  <div className="mb-3 p-3 bg-amber-50 dark:bg-amber-950 border border-amber-200 dark:border-amber-800 rounded-lg">
+                    <p className="text-sm text-amber-900 dark:text-amber-100">
+                      ⚠️ Please verify your email address before submitting a booking request. Check your inbox for the verification link.
+                    </p>
+                  </div>
+                )}
                 <Button 
                   onClick={submitRequest}
                   disabled={!canSubmit}
                   size="lg"
                   className="w-full"
+                  title={!isEmailVerified ? "Email verification required" : ""}
                 >
                   {isSubmitting ? (
                     <>
