@@ -5,16 +5,23 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
-import { Calendar, Clock, Plus, X } from "lucide-react";
+import { Calendar, Clock, Plus, X, Ban } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { ResponsiveTimeInput } from "@/components/ui/responsive-time-input";
+import { ResponsiveDateInput } from "@/components/ui/responsive-date-input";
 
 interface AvailabilitySlot {
   id?: string;
   day: string;
   startTime: string;
   endTime: string;
+}
+
+interface UnavailableDate {
+  id: string;
+  unavailable_date: string;
+  reason?: string;
 }
 
 interface AvailabilityManagerProps {
@@ -36,10 +43,34 @@ const AvailabilityManager = ({ sitterId, currentAvailability, onAvailabilityUpda
     endTime: ''
   });
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Phase 2.1: Unavailable dates state
+  const [unavailableDates, setUnavailableDates] = useState<UnavailableDate[]>([]);
+  const [newUnavailableDate, setNewUnavailableDate] = useState({
+    date: '',
+    reason: ''
+  });
+  const [loadingDates, setLoadingDates] = useState(false);
 
   useEffect(() => {
     setAvailability(currentAvailability || []);
+    fetchUnavailableDates();
   }, [currentAvailability]);
+
+  const fetchUnavailableDates = async () => {
+    try {
+      const { data, error } = await supabase
+        .from('sitter_unavailable_dates')
+        .select('*')
+        .eq('sitter_id', sitterId)
+        .order('unavailable_date', { ascending: true });
+
+      if (error) throw error;
+      setUnavailableDates(data || []);
+    } catch (error) {
+      console.error('Error fetching unavailable dates:', error);
+    }
+  };
 
   const addTimeSlot = () => {
     if (!newSlot.day || !newSlot.startTime || !newSlot.endTime) {
@@ -100,6 +131,87 @@ const AvailabilityManager = ({ sitterId, currentAvailability, onAvailabilityUpda
       });
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  // Phase 2.1: Add unavailable date
+  const addUnavailableDate = async () => {
+    if (!newUnavailableDate.date) {
+      toast({
+        title: "Validation Error",
+        description: "Please select a date.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const selectedDate = new Date(newUnavailableDate.date);
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    if (selectedDate < today) {
+      toast({
+        title: "Validation Error",
+        description: "Cannot block dates in the past.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoadingDates(true);
+    try {
+      const { error } = await supabase
+        .from('sitter_unavailable_dates')
+        .insert({
+          sitter_id: sitterId,
+          unavailable_date: newUnavailableDate.date,
+          reason: newUnavailableDate.reason || null
+        });
+
+      if (error) throw error;
+
+      toast({
+        title: "Date Blocked!",
+        description: "This date has been marked as unavailable.",
+      });
+
+      setNewUnavailableDate({ date: '', reason: '' });
+      fetchUnavailableDates();
+    } catch (error) {
+      console.error('Error adding unavailable date:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add unavailable date. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoadingDates(false);
+    }
+  };
+
+  // Phase 2.1: Remove unavailable date
+  const removeUnavailableDate = async (dateId: string) => {
+    try {
+      const { error } = await supabase
+        .from('sitter_unavailable_dates')
+        .delete()
+        .eq('id', dateId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Date Unblocked",
+        description: "This date is now available for bookings.",
+      });
+
+      fetchUnavailableDates();
+    } catch (error) {
+      console.error('Error removing unavailable date:', error);
+      toast({
+        title: "Error",
+        description: "Failed to remove unavailable date. Please try again.",
+        variant: "destructive",
+      });
     }
   };
 
@@ -192,6 +304,81 @@ const AvailabilityManager = ({ sitterId, currentAvailability, onAvailabilityUpda
                     variant="ghost"
                     size="sm"
                     onClick={() => removeTimeSlot(index)}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Phase 2.1: Unavailable Dates Section */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center space-x-2">
+            <Ban className="h-5 w-5" />
+            <span>Block Specific Dates</span>
+          </CardTitle>
+          <p className="text-sm text-muted-foreground mt-2">
+            Mark dates when you're unavailable (vacation, exams, etc.)
+          </p>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
+            <ResponsiveDateInput
+              value={newUnavailableDate.date}
+              onChange={(value) => setNewUnavailableDate(prev => ({ ...prev, date: value }))}
+              label="Select Date"
+              id="unavailable-date"
+              min={new Date().toISOString().split('T')[0]}
+            />
+            <div className="space-y-2">
+              <Label htmlFor="reason">Reason (Optional)</Label>
+              <Input
+                id="reason"
+                value={newUnavailableDate.reason}
+                onChange={(e) => setNewUnavailableDate(prev => ({ ...prev, reason: e.target.value }))}
+                placeholder="e.g., Vacation, Exams"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label className="invisible">Add</Label>
+              <Button 
+                onClick={addUnavailableDate} 
+                disabled={loadingDates}
+                className="w-full"
+                variant="destructive"
+              >
+                <Ban className="h-4 w-4 mr-2" />
+                {loadingDates ? "Adding..." : "Block Date"}
+              </Button>
+            </div>
+          </div>
+
+          {unavailableDates.length > 0 && (
+            <div className="space-y-3 mt-4">
+              <h4 className="font-semibold text-sm">Blocked Dates ({unavailableDates.length})</h4>
+              {unavailableDates.map((date) => (
+                <div key={date.id} className="flex items-center justify-between p-3 border rounded-lg bg-destructive/5">
+                  <div>
+                    <Badge variant="destructive">
+                      {new Date(date.unavailable_date).toLocaleDateString('en-US', {
+                        weekday: 'short',
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </Badge>
+                    {date.reason && (
+                      <p className="text-sm text-muted-foreground mt-1">{date.reason}</p>
+                    )}
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeUnavailableDate(date.id)}
                   >
                     <X className="h-4 w-4" />
                   </Button>

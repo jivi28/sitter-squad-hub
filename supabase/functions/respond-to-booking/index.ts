@@ -71,6 +71,26 @@ serve(async (req) => {
       throw new Error('Booking request has expired');
     }
 
+    // Phase 2.2: Check for booking conflicts
+    const { data: existingBookings } = await supabaseClient
+      .from('bookings')
+      .select('start_time, end_time')
+      .eq('sitter_id', sitter.id)
+      .eq('booking_date', booking.booking_date)
+      .eq('status', 'confirmed');
+
+    const timesOverlap = (start1: string, end1: string, start2: string, end2: string) => {
+      return start1 < end2 && end1 > start2;
+    };
+
+    const hasConflict = existingBookings?.some(existing => 
+      timesOverlap(booking.start_time, booking.end_time, existing.start_time, existing.end_time)
+    );
+
+    if (hasConflict) {
+      throw new Error('You already have a confirmed booking that overlaps with this time slot');
+    }
+
     // Check if this sitter has already responded to this booking
     const { data: existingResponse } = await supabaseClient
       .from('booking_responses')

@@ -91,6 +91,37 @@ const RequestBasedBookingSystem = () => {
       return;
     }
 
+    // Phase 2.2: Check for overlapping pending requests (warning only)
+    try {
+      const { data: existingRequests } = await supabase
+        .from('bookings')
+        .select('booking_date, start_time, end_time')
+        .eq('user_id', user.id)
+        .eq('status', 'pending')
+        .eq('booking_date', request.date);
+
+      if (existingRequests && existingRequests.length > 0) {
+        const timesOverlap = (start1: string, end1: string, start2: string, end2: string) => {
+          return start1 < end2 && end1 > start2;
+        };
+
+        const hasOverlap = existingRequests.some(existing => 
+          timesOverlap(request.startTime, request.endTime, existing.start_time, existing.end_time)
+        );
+
+        if (hasOverlap) {
+          toast({
+            title: "Overlapping Request Detected",
+            description: "You already have a pending request for this time. Creating multiple requests may reduce response rates.",
+            variant: "default",
+          });
+          // Continue anyway - just a warning
+        }
+      }
+    } catch (error) {
+      console.error('Error checking overlaps:', error);
+    }
+
     // Check pending booking limit
     try {
       const { count, error: countError } = await supabase

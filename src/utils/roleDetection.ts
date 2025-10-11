@@ -8,22 +8,16 @@ export interface UserRoles {
 
 export const detectUserRole = async (userId: string): Promise<UserRoles> => {
   try {
-    // Check for parent profile
-    const { data: parentProfile } = await supabase
-      .from('profiles')
-      .select('id')
-      .eq('user_id', userId)
-      .maybeSingle();
+    // Check user roles from the user_roles table
+    const { data: roles } = await supabase
+      .from('user_roles')
+      .select('role')
+      .eq('user_id', userId);
 
-    // Check for sitter profile
-    const { data: sitterProfile } = await supabase
-      .from('sitters')
-      .select('id')
-      .eq('user_id', userId)
-      .maybeSingle();
-
-    const isParent = !!parentProfile;
-    const isSitter = !!sitterProfile;
+    const roleSet = new Set(roles?.map(r => r.role) || []);
+    
+    const isParent = roleSet.has('parent');
+    const isSitter = roleSet.has('sitter');
 
     return {
       isParent,

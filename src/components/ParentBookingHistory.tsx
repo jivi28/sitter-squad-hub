@@ -8,6 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Loader2, Calendar, Clock, User, DollarSign, RefreshCw, Heart, CreditCard, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { SitterContactInfo } from "./SitterContactInfo";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
@@ -35,6 +36,8 @@ interface Booking {
   special_notes?: string;
   preferred_language?: string;
   sitter_id?: string;
+  sitter_phone?: string;
+  sitter_address?: string;
   created_at: string;
   request_expires_at?: string;
   response_count?: number;
@@ -410,6 +413,15 @@ const ParentBookingHistory = () => {
                     <strong>Preferred Language:</strong> {booking.preferred_language}
                   </p>
                 </div>
+              )}
+
+              {/* Phase 1.1: Show sitter contact info only for confirmed bookings */}
+              {booking.status === "confirmed" && booking.sitter_id && (
+                <SitterContactInfo 
+                  phone={booking.sitter_phone || "Contact via email"}
+                  address={booking.sitter_address || "Will be provided"}
+                  sitterName={booking.sitter_name || "Sitter"}
+                />
               )}
 
               {booking.status === "received_responses" && booking.response_count && booking.response_count > 0 && (

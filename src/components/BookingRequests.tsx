@@ -417,21 +417,18 @@ const BookingRequests = () => {
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4 p-3 bg-accent/50 rounded-lg">
                   <div>
                     <p className="text-sm text-muted-foreground">
-                      <strong>Phone:</strong> {request.profiles.phone}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      <strong>Address:</strong> {request.profiles.address}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">
                       <strong>Children Ages:</strong> {request.profiles.children_ages}
                     </p>
-                    {request.profiles.emergency_contact && (
+                    {request.profiles.special_needs && (
                       <p className="text-sm text-muted-foreground">
-                        <strong>Emergency Contact:</strong> {request.profiles.emergency_contact}
+                        <strong>Special Needs:</strong> {request.profiles.special_needs}
                       </p>
                     )}
+                  </div>
+                  <div>
+                    <p className="text-sm text-muted-foreground italic">
+                      📱 Contact information will be shared after you're selected for the booking
+                    </p>
                   </div>
                 </div>
               )}

@@ -79,11 +79,26 @@ serve(async (req) => {
 
     console.log(`Found ${availableSitters.length} available sitters for the requested time`);
 
+    // Phase 2.1: Filter out sitters with unavailable dates
+    const { data: unavailableDates } = await supabaseClient
+      .from('sitter_unavailable_dates')
+      .select('sitter_id')
+      .eq('unavailable_date', booking_date);
+
+    const unavailableSitterIds = new Set(unavailableDates?.map(d => d.sitter_id) || []);
+
+    const finalAvailableSitters = availableSitters.filter(
+      sitter => !unavailableSitterIds.has(sitter.id)
+    );
+
+    console.log(`Filtered ${availableSitters.length - finalAvailableSitters.length} sitters due to unavailable dates`);
+    console.log(`Final available sitters: ${finalAvailableSitters.length}`);
+
     // Send email notifications to available sitters
     let emailsSent = 0;
     let emailErrors = 0;
     
-    for (const sitter of availableSitters) {
+    for (const sitter of finalAvailableSitters) {
       try {
         console.log(`Sending notification email to sitter: ${sitter.first_name} ${sitter.last_name} (User ID: ${sitter.user_id})`);
         
@@ -120,27 +135,14 @@ serve(async (req) => {
 
     console.log(`Email notification summary: ${emailsSent} sent, ${emailErrors} errors`);
 
-    // Store which sitters were notified (for future tracking)
-    const notificationRecords = availableSitters.map(sitter => ({
-      booking_id,
-      sitter_id: sitter.id,
-      notified_at: new Date().toISOString(),
-      notification_type: 'system' // Could be 'email', 'push', etc.
-    }));
-
-    // You could create a notifications table to track this
-    // const { error: notificationError } = await supabaseClient
-    //   .from('booking_notifications')
-    //   .insert(notificationRecords);
-
     return new Response(
       JSON.stringify({
         success: true,
-        message: `Found ${availableSitters.length} available sitters, sent ${emailsSent} email notifications`,
-        available_sitters: availableSitters.length,
+        message: `Found ${finalAvailableSitters.length} available sitters, sent ${emailsSent} email notifications`,
+        available_sitters: finalAvailableSitters.length,
         emailsSent,
         emailErrors,
-        sitters: availableSitters.map(s => ({ 
+        sitters: finalAvailableSitters.map(s => ({ 
           id: s.id, 
           name: `${s.first_name} ${s.last_name}` 
         }))
