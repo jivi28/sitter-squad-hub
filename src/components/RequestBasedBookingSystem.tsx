@@ -12,6 +12,7 @@ import { Calendar, Clock, Users, Loader2, Languages, Send, Baby, Dog } from "luc
 import { supabase } from "@/integrations/supabase/client";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { bookingRequestSchema } from "@/lib/validation";
 
 interface BookingRequest {
   date: string;
@@ -156,6 +157,27 @@ const RequestBasedBookingSystem = () => {
     setIsSubmitting(true);
 
     try {
+      // Phase 3: Validate input before submission
+      const validationResult = bookingRequestSchema.safeParse({
+        booking_date: request.date,
+        start_time: request.startTime,
+        end_time: request.endTime,
+        num_children: request.children,
+        special_notes: request.notes,
+        preferred_language: request.preferredLanguage,
+        service_type: request.serviceType,
+      });
+
+      if (!validationResult.success) {
+        const errors = validationResult.error.errors.map(e => e.message).join(', ');
+        toast({
+          title: "Validation Error",
+          description: errors,
+          variant: "destructive"
+        });
+        return;
+      }
+
       // Set request expiration to 24 hours from now
       const requestExpiresAt = new Date();
       requestExpiresAt.setHours(requestExpiresAt.getHours() + 24);

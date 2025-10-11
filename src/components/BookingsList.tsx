@@ -19,12 +19,16 @@ interface Booking {
   special_notes: string | null;
   preferred_language: string | null;
   user_id: string;
-  sitter_name: string;
+  sitter_id: string | null;
   profiles?: {
     first_name: string;
     last_name: string;
     phone: string;
     address: string;
+  };
+  sitters?: {
+    first_name: string;
+    last_name: string;
   };
 }
 
@@ -101,11 +105,18 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
       console.log('BookingsList: Sitter name:', sitterName);
       setDebugInfo(`Sitter: ${sitterName}`);
 
-      // Fetch bookings where this sitter is selected - simplified query first
+      // Fetch bookings where this sitter is selected
+      // Phase 4: Fetch bookings with sitter info from sitters table
       const { data, error } = await supabase
         .from('bookings')
-        .select('*')
-        .eq('sitter_name', sitterName)
+        .select(`
+          *,
+          sitters (
+            first_name,
+            last_name
+          )
+        `)
+        .eq('sitter_id', sitterData.id)
         .order('booking_date', { ascending: true });
 
       if (error) {
@@ -133,9 +144,13 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
             last_name,
             phone,
             address
+          ),
+          sitters (
+            first_name,
+            last_name
           )
         `)
-        .eq('sitter_name', sitterName)
+        .eq('sitter_id', sitterData.id)
         .order('booking_date', { ascending: true }) as { data: any[] | null; error: any };
 
       if (profileError) {
@@ -145,8 +160,15 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
         setDebugInfo(`Found ${data.length} bookings (profile fetch failed)`);
       } else {
         console.log('BookingsList: Fetched bookings with profiles:', bookingsWithProfiles);
-        setBookings(bookingsWithProfiles || []);
-        setDebugInfo(`Found ${(bookingsWithProfiles || []).length} bookings with profiles`);
+        // Map the data to ensure sitters is properly typed
+        const mappedBookings = (bookingsWithProfiles || []).map((booking: any) => ({
+          ...booking,
+          sitters: Array.isArray(booking.sitters) && booking.sitters.length > 0 
+            ? booking.sitters[0] 
+            : undefined
+        }));
+        setBookings(mappedBookings as any);
+        setDebugInfo(`Found ${mappedBookings.length} bookings with profiles`);
       }
     } catch (error) {
       console.error('BookingsList: Error in fetchBookings:', error);
@@ -193,7 +215,7 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
                 bookingId: booking.id,
                 parentUserId: booking.user_id,
                 parentName,
-                sitterName: booking.sitter_name,
+                sitterName: booking.sitters ? `${booking.sitters.first_name} ${booking.sitters.last_name}` : 'Unknown',
                 bookingDate: booking.booking_date,
                 startTime: booking.start_time,
                 endTime: booking.end_time,

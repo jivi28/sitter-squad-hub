@@ -36,7 +36,19 @@ serve(async (req) => {
       throw new Error('Invalid authentication');
     }
 
-    const { booking_id, response, message }: BookingResponse = await req.json();
+    const requestBody = await req.json();
+    const { booking_id, response, message }: BookingResponse = requestBody;
+
+    // Phase 3: Input validation
+    if (!booking_id || typeof booking_id !== 'string' || booking_id.trim().length === 0) {
+      throw new Error('Invalid booking_id');
+    }
+    if (!response || !['accepted', 'declined'].includes(response)) {
+      throw new Error('Invalid response - must be "accepted" or "declined"');
+    }
+    if (message && (typeof message !== 'string' || message.length > 1000)) {
+      throw new Error('Invalid message - must be a string with max 1000 characters');
+    }
 
     console.log('Processing booking response:', { booking_id, response, user_id: user.id });
 

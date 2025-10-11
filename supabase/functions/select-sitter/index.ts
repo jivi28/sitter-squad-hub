@@ -35,7 +35,16 @@ serve(async (req) => {
       throw new Error('Invalid authentication');
     }
 
-    const { booking_id, sitter_id }: SelectSitterRequest = await req.json();
+    const requestBody = await req.json();
+    const { booking_id, sitter_id }: SelectSitterRequest = requestBody;
+
+    // Phase 3: Input validation
+    if (!booking_id || typeof booking_id !== 'string' || booking_id.trim().length === 0) {
+      throw new Error('Invalid booking_id');
+    }
+    if (!sitter_id || typeof sitter_id !== 'string' || sitter_id.trim().length === 0) {
+      throw new Error('Invalid sitter_id');
+    }
 
     console.log('Processing sitter selection:', { booking_id, sitter_id, user_id: user.id });
 
@@ -86,12 +95,11 @@ serve(async (req) => {
     const hours = (endTime.getTime() - startTime.getTime()) / (1000 * 60 * 60);
     const totalCost = hours * sitter.hourly_rate;
 
-    // Update booking with selected sitter
+    // Phase 4: Update booking with selected sitter (removed sitter_name field)
     const { error: updateError } = await supabaseClient
       .from('bookings')
       .update({
         sitter_id: sitter.id,
-        sitter_name: `${sitter.first_name} ${sitter.last_name}`,
         sitter_hourly_rate: sitter.hourly_rate,
         total_cost: totalCost,
         status: 'confirmed'

@@ -24,10 +24,11 @@ import { ExtendRequestButton } from "./ExtendRequestButton";
 
 interface Booking {
   id: string;
+  user_id: string;
+  sitter_id: string | null;
   booking_date: string;
   start_time: string;
   end_time: string;
-  sitter_name: string;
   sitter_hourly_rate: number;
   num_children: number;
   total_cost: number;
@@ -35,11 +36,14 @@ interface Booking {
   payment_status: string;
   special_notes?: string;
   preferred_language?: string;
-  sitter_id?: string;
   created_at: string;
   request_expires_at?: string;
   response_count?: number;
   extension_count?: number;
+  sitters?: {
+    first_name: string;
+    last_name: string;
+  };
 }
 
 interface RebookData {
