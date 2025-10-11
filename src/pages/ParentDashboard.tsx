@@ -11,6 +11,9 @@ import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
 import ParentBookingHistory from "@/components/ParentBookingHistory";
 import RequestBasedBookingSystem from "@/components/RequestBasedBookingSystem";
+import { ParentOnboardingModal } from "@/components/ParentOnboardingModal";
+import { useOnboarding } from "@/hooks/useOnboarding";
+import { HelpCard } from "@/components/HelpCard";
 
 interface ParentProfile {
   id: string;
@@ -46,6 +49,9 @@ const ParentDashboard = () => {
   
   // Get initial tab from URL params, default to "bookings"
   const initialTab = searchParams.get('tab') || 'bookings';
+  
+  // Onboarding
+  const { showOnboarding, completeOnboarding } = useOnboarding("parent");
 
   useEffect(() => {
     // Don't redirect if we're still loading auth state
@@ -199,6 +205,9 @@ const ParentDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
+      
+      <ParentOnboardingModal isOpen={showOnboarding} onClose={completeOnboarding} />
+      
       <div className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">
@@ -295,10 +304,23 @@ const ParentDashboard = () => {
           </TabsList>
 
           <TabsContent value="bookings">
-            <ParentBookingHistory />
+            <div className="space-y-6">
+              <HelpCard
+                title="📚 Booking Management Tips"
+                description="Get the most out of your booking experience"
+                tips={[
+                  "You can favorite sitters you trust for quick rebooking",
+                  "Booking requests expire after 24 hours - book early!",
+                  "Add special notes to help sitters prepare better",
+                  "Check sitter profiles for languages and special skills"
+                ]}
+                storageKey="parent_booking_help"
+              />
+              <ParentBookingHistory />
+            </div>
           </TabsContent>
 
-          <TabsContent value="book-sitter">
+          <TabsContent value="book-sitter" id="how-it-works-section">
             <Card>
               <CardHeader>
                 <CardTitle>Book a New Sitter</CardTitle>
@@ -306,7 +328,18 @@ const ParentDashboard = () => {
                   Submit a request and available sitters will respond to you.
                 </CardDescription>
               </CardHeader>
-              <CardContent>
+              <CardContent className="space-y-6">
+                <HelpCard
+                  title="🎯 How to Book a Sitter"
+                  description="Follow these steps for a smooth booking"
+                  tips={[
+                    "Fill in all details including date, time, and number of children",
+                    "Add your preferred language if you have a preference",
+                    "Sitters typically respond within a few hours",
+                    "You'll receive notifications when sitters apply"
+                  ]}
+                  storageKey="parent_booking_guide"
+                />
                 <RequestBasedBookingSystem />
               </CardContent>
             </Card>

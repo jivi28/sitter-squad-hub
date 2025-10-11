@@ -10,6 +10,9 @@ import AvailabilityManager from "@/components/AvailabilityManager";
 import BookingRequests from "@/components/BookingRequests";
 import BookingsList from "@/components/BookingsList";
 import { useToast } from "@/hooks/use-toast";
+import { SitterOnboardingModal } from "@/components/SitterOnboardingModal";
+import { useOnboarding } from "@/hooks/useOnboarding";
+import { HelpCard } from "@/components/HelpCard";
 
 interface SitterProfile {
   id: string;
@@ -27,6 +30,9 @@ const SitterDashboard = () => {
   const { toast } = useToast();
   const [sitterProfile, setSitterProfile] = useState<SitterProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Onboarding
+  const { showOnboarding, completeOnboarding } = useOnboarding("sitter");
 
   useEffect(() => {
     if (authLoading) return;
@@ -104,6 +110,8 @@ const SitterDashboard = () => {
     <div className="min-h-screen bg-background">
       <Header />
       
+      <SitterOnboardingModal isOpen={showOnboarding} onClose={completeOnboarding} />
+      
       <main className="py-8">
         <div className="container mx-auto px-6">
           <div className="mb-8">
@@ -176,15 +184,41 @@ const SitterDashboard = () => {
             </TabsList>
 
             <TabsContent value="requests">
-              <BookingRequests />
+              <div className="space-y-6">
+                <HelpCard
+                  title="🔔 Managing Requests"
+                  description="Best practices for handling booking requests"
+                  tips={[
+                    "Respond to requests quickly to improve your profile",
+                    "Review all booking details before accepting",
+                    "You can decline requests that don't fit your schedule",
+                    "Parents get notified immediately when you respond"
+                  ]}
+                  storageKey="sitter_requests_help"
+                />
+                <BookingRequests />
+              </div>
             </TabsContent>
 
             <TabsContent value="availability">
-              <AvailabilityManager 
-                sitterId={sitterProfile.id}
-                currentAvailability={Array.isArray(sitterProfile.availability) ? sitterProfile.availability : []}
-                onAvailabilityUpdate={fetchSitterProfile}
-              />
+              <div className="space-y-6">
+                <HelpCard
+                  title="📅 Availability Tips"
+                  description="Keep your calendar updated for more bookings"
+                  tips={[
+                    "Update your availability regularly to get more requests",
+                    "Being available on weekends typically gets more bookings",
+                    "Add multiple time slots to increase your chances",
+                    "Mark yourself unavailable for dates you can't work"
+                  ]}
+                  storageKey="sitter_availability_help"
+                />
+                <AvailabilityManager 
+                  sitterId={sitterProfile.id}
+                  currentAvailability={Array.isArray(sitterProfile.availability) ? sitterProfile.availability : []}
+                  onAvailabilityUpdate={fetchSitterProfile}
+                />
+              </div>
             </TabsContent>
 
             <TabsContent value="bookings">
