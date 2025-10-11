@@ -207,7 +207,8 @@ const Hero = () => {
                 src={heroImage} 
                 alt="Happy family with children enjoying safe childcare" 
                 className="w-full h-auto object-cover"
-                loading="eager"
+                loading="lazy"
+                decoding="async"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-primary/10 to-transparent"></div>
             </div>
