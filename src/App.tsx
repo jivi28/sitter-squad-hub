@@ -1,4 +1,4 @@
-import { Suspense, lazy } from "react";
+import { Suspense, lazy, useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -6,6 +6,9 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { DashboardSkeleton } from "./components/LoadingSkeleton";
 import { AuthProvider } from "./hooks/useAuth";
+import SkipToContent from "./components/SkipToContent";
+import KeyboardShortcutsHelp from "./components/KeyboardShortcutsHelp";
+import { useKeyboardShortcuts } from "./hooks/useKeyboardShortcuts";
 
 // Eager load landing page for instant first paint
 import Index from "./pages/Index";
@@ -24,6 +27,53 @@ const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
 
+// Wrapper component for keyboard shortcuts
+const AppContent = () => {
+  useKeyboardShortcuts();
+
+  // Add keyboard navigation class when Tab is pressed
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Tab') {
+        document.body.classList.add('keyboard-nav');
+      }
+    };
+
+    const handleMouseDown = () => {
+      document.body.classList.remove('keyboard-nav');
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    window.addEventListener('mousedown', handleMouseDown);
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown);
+      window.removeEventListener('mousedown', handleMouseDown);
+    };
+  }, []);
+
+  return (
+    <Suspense fallback={<DashboardSkeleton />}>
+      <SkipToContent />
+      <KeyboardShortcutsHelp />
+      <Routes>
+        <Route path="/" element={<Index />} />
+        <Route path="/about" element={<About />} />
+        <Route path="/auth" element={<Auth />} />
+        <Route path="/parent-signup" element={<ParentSignup />} />
+        <Route path="/parent-dashboard" element={<ParentDashboard />} />
+        <Route path="/sitter-signup" element={<SitterSignup />} />
+        <Route path="/sitter-auth" element={<SitterAuth />} />
+        <Route path="/sitter-dashboard" element={<SitterDashboard />} />
+        <Route path="/verify-email" element={<VerifyEmail />} />
+        <Route path="/payment-success" element={<PaymentSuccess />} />
+        {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Suspense>
+  );
+};
+
 const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
@@ -31,22 +81,7 @@ const App = () => (
         <Toaster />
         <Sonner />
         <BrowserRouter>
-          <Suspense fallback={<DashboardSkeleton />}>
-            <Routes>
-              <Route path="/" element={<Index />} />
-              <Route path="/about" element={<About />} />
-              <Route path="/auth" element={<Auth />} />
-              <Route path="/parent-signup" element={<ParentSignup />} />
-              <Route path="/parent-dashboard" element={<ParentDashboard />} />
-              <Route path="/sitter-signup" element={<SitterSignup />} />
-              <Route path="/sitter-auth" element={<SitterAuth />} />
-              <Route path="/sitter-dashboard" element={<SitterDashboard />} />
-              <Route path="/verify-email" element={<VerifyEmail />} />
-              <Route path="/payment-success" element={<PaymentSuccess />} />
-              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-              <Route path="*" element={<NotFound />} />
-            </Routes>
-          </Suspense>
+          <AppContent />
         </BrowserRouter>
       </TooltipProvider>
     </AuthProvider>

@@ -101,7 +101,11 @@ export const MobileBottomNav = ({ userType }: MobileBottomNavProps) => {
   };
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]">
+    <nav 
+      className="md:hidden fixed bottom-0 left-0 right-0 bg-background/95 backdrop-blur-md border-t z-50 shadow-[0_-4px_12px_rgba(0,0,0,0.05)]"
+      aria-label="Mobile navigation"
+      role="navigation"
+    >
       <div className="flex justify-around items-center h-16">
         {navItems.map((item) => {
           const Icon = item.icon;
@@ -119,6 +123,8 @@ export const MobileBottomNav = ({ userType }: MobileBottomNavProps) => {
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
               )}
+              aria-label={`${item.label}${hasBadge ? ` (${item.badge} unread)` : ''}`}
+              aria-current={active ? 'page' : undefined}
             >
               <div className="relative">
                 <Icon className={cn("h-6 w-6 transition-transform", active && "scale-110")} />

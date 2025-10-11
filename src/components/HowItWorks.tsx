@@ -40,7 +40,7 @@ const HowItWorks = () => {
   };
 
   return (
-    <section id="how-it-works" className="py-12 sm:py-16 md:py-20 bg-background">
+    <section ref={ref} id="how-it-works" className="py-12 sm:py-16 md:py-20 bg-background" aria-labelledby="how-it-works-heading">
       <div className="container mx-auto px-4 sm:px-6">
         <motion.div 
           className="text-center mb-12 sm:mb-16"
@@ -49,7 +49,7 @@ const HowItWorks = () => {
           viewport={{ once: true }}
           transition={{ duration: 0.6 }}
         >
-          <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-3 sm:mb-4">
+          <h2 id="how-it-works-heading" className="text-3xl sm:text-4xl font-bold text-foreground mb-3 sm:mb-4">
             How It Works
           </h2>
           <p className="text-base sm:text-lg md:text-xl text-muted-foreground max-w-2xl mx-auto px-4">
@@ -72,6 +72,8 @@ const HowItWorks = () => {
               key={index} 
               className="text-center group relative z-10"
               variants={item}
+              role="article"
+              aria-label={`Step ${index + 1}: ${step.title}`}
             >
               <div className="relative mb-6">
                 <motion.div 

@@ -96,8 +96,10 @@ const Index = () => {
   return (
     <div className="min-h-screen bg-background overflow-x-hidden">
       <Header />
-      <Hero />
-      <HowItWorks />
+      <main id="main-content" role="main">
+        <Hero />
+        <HowItWorks />
+      </main>
     </div>
   );
 };

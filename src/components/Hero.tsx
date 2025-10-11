@@ -94,7 +94,7 @@ const Hero = () => {
   };
 
   return (
-    <section className="bg-gradient-soft py-12 sm:py-16 md:py-20 overflow-hidden">
+    <section className="bg-gradient-soft py-12 sm:py-16 md:py-20 overflow-hidden" aria-label="Hero section">
       <div className="container mx-auto px-4 sm:px-6">
         <div className="grid lg:grid-cols-2 gap-8 md:gap-12 items-center">
           <motion.div 
