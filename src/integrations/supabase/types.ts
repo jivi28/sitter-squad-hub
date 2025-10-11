@@ -61,6 +61,7 @@ export type Database = {
           booking_date: string
           created_at: string
           end_time: string
+          extension_count: number | null
           id: string
           num_children: number
           payment_status: string | null
@@ -82,6 +83,7 @@ export type Database = {
           booking_date: string
           created_at?: string
           end_time: string
+          extension_count?: number | null
           id?: string
           num_children: number
           payment_status?: string | null
@@ -103,6 +105,7 @@ export type Database = {
           booking_date?: string
           created_at?: string
           end_time?: string
+          extension_count?: number | null
           id?: string
           num_children?: number
           payment_status?: string | null
@@ -229,6 +232,38 @@ export type Database = {
         }
         Relationships: []
       }
+      sitter_unavailable_dates: {
+        Row: {
+          created_at: string | null
+          id: string
+          reason: string | null
+          sitter_id: string
+          unavailable_date: string
+        }
+        Insert: {
+          created_at?: string | null
+          id?: string
+          reason?: string | null
+          sitter_id: string
+          unavailable_date: string
+        }
+        Update: {
+          created_at?: string | null
+          id?: string
+          reason?: string | null
+          sitter_id?: string
+          unavailable_date?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sitter_unavailable_dates_sitter_id_fkey"
+            columns: ["sitter_id"]
+            isOneToOne: false
+            referencedRelation: "sitters"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       sitters: {
         Row: {
           address: string
@@ -309,7 +344,10 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      expire_old_booking_requests: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
     }
     Enums: {
       [_ in never]: never
