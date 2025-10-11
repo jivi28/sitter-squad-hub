@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Calendar, Clock, User, DollarSign, RefreshCw, Heart, CreditCard } from "lucide-react";
+import { Loader2, Calendar, Clock, User, DollarSign, RefreshCw, Heart, CreditCard, AlertCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
@@ -13,6 +13,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { ResponsiveDateInput } from "@/components/ui/responsive-date-input";
 import { ResponsiveTimeInput } from "@/components/ui/responsive-time-input";
 import SitterApplications from "./SitterApplications";
+import { RequestExpirationTimer } from "./RequestExpirationTimer";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 
 interface Booking {
   id: string;
@@ -29,6 +31,7 @@ interface Booking {
   preferred_language?: string;
   sitter_id?: string;
   created_at: string;
+  request_expires_at?: string;
 }
 
 interface RebookData {
@@ -289,6 +292,11 @@ const ParentBookingHistory = () => {
     try {
       setPaymentLoading(booking.id);
       
+      toast({
+        title: "Redirecting to Payment",
+        description: "Please wait while we prepare your secure payment...",
+      });
+      
       const { data, error } = await supabase.functions.invoke('create-booking-payment', {
         body: { booking_id: booking.id }
       });
@@ -298,13 +306,8 @@ const ParentBookingHistory = () => {
       }
 
       if (data.url) {
-        // Open payment in new tab
-        window.open(data.url, '_blank');
-        
-        toast({
-          title: "Payment Started",
-          description: "Payment window opened. Complete your payment to confirm the booking.",
-        });
+        // Redirect to payment in same window for better UX
+        window.location.href = data.url;
       }
     } catch (error) {
       console.error("Payment error:", error);
@@ -313,7 +316,6 @@ const ParentBookingHistory = () => {
         description: "Failed to start payment process. Please try again.",
         variant: "destructive",
       });
-    } finally {
       setPaymentLoading(null);
     }
   };
@@ -363,13 +365,17 @@ const ParentBookingHistory = () => {
                   <User className="h-5 w-5" />
                   {booking.sitter_name || "Waiting for Sitter"}
                 </CardTitle>
-                <div className="flex gap-2">
+                <div className="flex gap-2 flex-wrap">
                   <Badge variant={getStatusColor(booking.status)}>
                     {booking.status === "received_responses" ? "Received Applications" : booking.status}
                   </Badge>
                   <Badge variant={getPaymentStatusColor(booking.payment_status)}>
                     Payment: {booking.payment_status}
                   </Badge>
+                  <RequestExpirationTimer 
+                    expiresAt={booking.request_expires_at || null}
+                    status={booking.status}
+                  />
                 </div>
               </div>
               <CardDescription>
@@ -377,6 +383,16 @@ const ParentBookingHistory = () => {
               </CardDescription>
             </CardHeader>
             <CardContent>
+              {booking.status === "pending" && booking.request_expires_at && (
+                <Alert className="mb-4">
+                  <AlertCircle className="h-4 w-4" />
+                  <AlertDescription>
+                    This booking request will expire in <RequestExpirationTimer expiresAt={booking.request_expires_at} status={booking.status} />. 
+                    {" "}After expiration, you'll need to create a new request.
+                  </AlertDescription>
+                </Alert>
+              )}
+              
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
                 <div className="flex items-center gap-2">
                   <Calendar className="h-4 w-4 text-muted-foreground" />
@@ -428,18 +444,23 @@ const ParentBookingHistory = () => {
 
               <div className="flex gap-2 flex-wrap">
                 {canPay(booking) && (
-                  <Button
-                    onClick={() => handlePayment(booking)}
-                    disabled={paymentLoading === booking.id}
-                    className="bg-green-600 hover:bg-green-700"
-                  >
-                    {paymentLoading === booking.id ? (
-                      <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    ) : (
-                      <CreditCard className="h-4 w-4 mr-2" />
-                    )}
-                    Pay €{booking.total_cost}
-                  </Button>
+                  <div className="w-full">
+                    <Button
+                      onClick={() => handlePayment(booking)}
+                      disabled={paymentLoading === booking.id}
+                      className="bg-green-600 hover:bg-green-700 w-full sm:w-auto"
+                    >
+                      {paymentLoading === booking.id ? (
+                        <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                      ) : (
+                        <CreditCard className="h-4 w-4 mr-2" />
+                      )}
+                      Pay €{booking.total_cost}
+                    </Button>
+                    <p className="text-sm text-muted-foreground mt-2">
+                      You'll be redirected to a secure payment page. After payment, you'll be returned here.
+                    </p>
+                  </div>
                 )}
                 
                 {canRebook(booking) && (
