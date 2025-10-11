@@ -36,8 +36,6 @@ interface Booking {
   special_notes?: string;
   preferred_language?: string;
   sitter_id?: string;
-  sitter_phone?: string;
-  sitter_address?: string;
   created_at: string;
   request_expires_at?: string;
   response_count?: number;
@@ -415,12 +413,13 @@ const ParentBookingHistory = () => {
                 </div>
               )}
 
-              {/* Phase 1.1: Show sitter contact info only for confirmed bookings */}
+              {/* Show sitter contact info only for confirmed AND paid bookings */}
               {booking.status === "confirmed" && booking.sitter_id && (
                 <SitterContactInfo 
-                  phone={booking.sitter_phone || "Contact via email"}
-                  address={booking.sitter_address || "Will be provided"}
+                  sitterId={booking.sitter_id}
                   sitterName={booking.sitter_name || "Sitter"}
+                  bookingStatus={booking.status}
+                  paymentStatus={booking.payment_status}
                 />
               )}
 
