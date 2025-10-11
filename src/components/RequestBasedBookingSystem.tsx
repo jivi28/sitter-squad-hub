@@ -204,20 +204,8 @@ const RequestBasedBookingSystem = () => {
 
       if (bookingError) throw bookingError;
 
-      console.log('Booking created successfully, now notifying sitters:', booking);
-
       // Call edge function to notify available sitters
       try {
-        console.log('Calling notify-available-sitters function with data:', {
-          booking_id: booking.id,
-          booking_date: request.date,
-          start_time: request.startTime,
-          end_time: request.endTime,
-          num_children: request.children,
-          special_notes: request.notes,
-          preferred_language: request.preferredLanguage
-        });
-
         const { data: notificationData, error: notificationError } = await supabase.functions.invoke('notify-available-sitters', {
           body: {
             booking_id: booking.id,
@@ -240,7 +228,6 @@ const RequestBasedBookingSystem = () => {
             variant: "default",
           });
         } else {
-          console.log('Sitters notified successfully:', notificationData);
           const serviceLabel = request.serviceType === 'pet_sitting' ? 'pet sitting' : 'babysitting';
           toast({
             title: "Request Submitted!",

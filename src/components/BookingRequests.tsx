@@ -94,7 +94,7 @@ const BookingRequests = () => {
           table: 'bookings',
         },
         () => {
-          console.log('New booking request created');
+          
           fetchBookingRequests();
         }
       )

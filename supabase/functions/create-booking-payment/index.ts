@@ -11,6 +11,12 @@ interface PaymentRequest {
   booking_id: string;
 }
 
+// UUID validation helper
+const isValidUUID = (uuid: string): boolean => {
+  const uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+  return uuidRegex.test(uuid);
+};
+
 serve(async (req) => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -39,13 +45,22 @@ serve(async (req) => {
     if (!booking_id) {
       throw new Error("Booking ID is required");
     }
+    if (!isValidUUID(booking_id)) {
+      throw new Error("Invalid booking ID format");
+    }
 
     console.log(`Processing payment for booking: ${booking_id} by user: ${user.id} (${user.email})`);
 
-    // Fetch booking details
+    // Fetch booking details with sitter information
     const { data: booking, error: bookingError } = await supabaseClient
       .from("bookings")
-      .select("*")
+      .select(`
+        *,
+        sitters!inner(
+          first_name,
+          last_name
+        )
+      `)
       .eq("id", booking_id)
       .eq("user_id", user.id)
       .single();
@@ -89,6 +104,9 @@ serve(async (req) => {
 
     console.log(`Creating payment session for amount: $${booking.total_cost} (${amountInCents} cents)`);
 
+    // Get sitter name from joined data
+    const sitterName = `${booking.sitters.first_name} ${booking.sitters.last_name}`;
+
     // Create Checkout Session
     const session = await stripe.checkout.sessions.create({
       customer: customerId,
@@ -97,7 +115,7 @@ serve(async (req) => {
             price_data: {
               currency: "eur",
               product_data: {
-              name: `Babysitting Service - ${booking.sitter_name}`,
+              name: `Babysitting Service - ${sitterName}`,
               description: `Booking for ${new Date(booking.booking_date).toLocaleDateString()} from ${booking.start_time} to ${booking.end_time}`,
             },
             unit_amount: amountInCents,

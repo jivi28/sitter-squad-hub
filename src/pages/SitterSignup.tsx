@@ -50,17 +50,17 @@ const SitterSignup = () => {
     if (authLoading) return;
     
     if (!user) {
-      console.log('SitterSignup: No user found, redirecting to sitter-auth');
+      
       window.location.href = '/sitter-auth';
       return;
     }
     
-    console.log('SitterSignup: User found:', user.email);
+    
 
     // Check if sitter profile already exists
     const checkSitterProfile = async () => {
       try {
-        console.log('SitterSignup: Checking sitter profile for user:', user.id);
+        
         const { data, error } = await supabase
           .from('sitters')
           .select('*')
@@ -72,7 +72,7 @@ const SitterSignup = () => {
           throw error;
         }
 
-        console.log('SitterSignup: Sitter profile data:', data);
+        
 
         if (data) {
           // Mark as edit mode since profile exists
@@ -82,12 +82,10 @@ const SitterSignup = () => {
           const urlParams = new URLSearchParams(window.location.search);
           const isExplicitAccess = urlParams.get('edit') === 'true';
           
-          console.log('SitterSignup: URL params edit flag:', isExplicitAccess);
-          console.log('SitterSignup: Approved at:', data.approved_at);
 
           if (data.approved_at && !isExplicitAccess) {
             // Redirect to dashboard if already approved and not explicit access
-            console.log('SitterSignup: Approved sitter accessing without edit flag, redirecting to dashboard');
+            
             window.location.href = '/sitter-dashboard';
             return;
           }

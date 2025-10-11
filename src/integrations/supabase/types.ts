@@ -71,7 +71,6 @@ export type Database = {
           service_type: string
           sitter_hourly_rate: number | null
           sitter_id: string | null
-          sitter_name: string | null
           special_notes: string | null
           start_time: string
           status: string
@@ -93,7 +92,6 @@ export type Database = {
           service_type?: string
           sitter_hourly_rate?: number | null
           sitter_id?: string | null
-          sitter_name?: string | null
           special_notes?: string | null
           start_time: string
           status?: string
@@ -115,7 +113,6 @@ export type Database = {
           service_type?: string
           sitter_hourly_rate?: number | null
           sitter_id?: string | null
-          sitter_name?: string | null
           special_notes?: string | null
           start_time?: string
           status?: string

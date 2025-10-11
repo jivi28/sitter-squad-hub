@@ -36,7 +36,7 @@ const PaymentSuccess = () => {
   // Phase 5.1 & 5.2: Query database directly and add polling for webhook delays
   const checkPaymentStatus = async () => {
     try {
-      console.log('Checking payment status for booking:', bookingId);
+      
       
       const { data: booking, error: fetchError } = await supabase
         .from('bookings')
@@ -48,7 +48,7 @@ const PaymentSuccess = () => {
         throw new Error(`Failed to fetch booking: ${fetchError.message}`);
       }
 
-      console.log('Booking payment status:', booking?.payment_status);
+      
 
       if (booking?.payment_status === 'completed' || booking?.payment_status === 'paid') {
         // Payment confirmed by webhook
@@ -66,7 +66,7 @@ const PaymentSuccess = () => {
       } else if (booking?.payment_status === 'pending') {
         // Phase 5.2: Webhook hasn't updated yet - start/continue polling
         if (pollingCount === 0) {
-          console.log('Payment still pending, starting polling...');
+          
           setPollingCount(1);
           
           // Poll every 2 seconds for up to 30 seconds (15 attempts)
@@ -75,7 +75,7 @@ const PaymentSuccess = () => {
             attempts++;
             setPollingCount(attempts);
             
-            console.log(`Polling attempt ${attempts}/15`);
+            
             
             const { data: updatedBooking } = await supabase
               .from('bookings')
@@ -84,7 +84,7 @@ const PaymentSuccess = () => {
               .single();
 
             if (updatedBooking?.payment_status === 'completed' || updatedBooking?.payment_status === 'paid') {
-              console.log('Payment confirmed during polling');
+              
               setVerified(true);
               setVerifying(false);
               

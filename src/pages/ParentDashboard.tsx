@@ -59,17 +59,17 @@ const ParentDashboard = () => {
   useEffect(() => {
     // Don't redirect if we're still loading auth state
     if (authLoading) {
-      console.log('Auth still loading, waiting...');
+      
       return;
     }
     
     if (!user) {
-      console.log('No user found, redirecting to auth');
+      
       navigate("/auth");
       return;
     }
     
-    console.log('User authenticated, fetching parent data:', user.email);
+    
     fetchParentData();
   }, [user, authLoading, navigate]);
 
@@ -90,13 +90,13 @@ const ParentDashboard = () => {
 
   const fetchParentData = async () => {
     if (!user) {
-      console.log('No user available for fetching parent data');
+      
       return;
     }
 
     try {
       setDataLoading(true);
-      console.log('Fetching parent data for user:', user.id);
+      
 
       // Fetch parent profile
       const { data: profile, error: profileError } = await supabase
@@ -108,14 +108,14 @@ const ParentDashboard = () => {
       if (profileError) {
         console.error("Error fetching profile:", profileError);
         if (profileError.code === 'PGRST116') {
-          console.log('Profile not found, redirecting to signup');
+          
           navigate("/parent-signup");
           return;
         }
         throw profileError;
       }
 
-      console.log('Profile fetched successfully:', profile);
+      
 
       // Fetch booking statistics
       const { data: bookings, error: bookingsError } = await supabase
@@ -128,7 +128,7 @@ const ParentDashboard = () => {
         throw bookingsError;
       }
 
-      console.log('Bookings fetched:', bookings?.length || 0, 'bookings');
+      
 
       const now = new Date();
       const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);

@@ -129,7 +129,7 @@ export const useBookingUpdates = ({ userId, userRole }: UseBookingUpdatesProps) 
           table: 'bookings',
         },
         (payload) => {
-          console.log('Booking update:', payload);
+          
           fetchBookings(); // Refresh on any booking change
         }
       )
@@ -146,7 +146,7 @@ export const useBookingUpdates = ({ userId, userRole }: UseBookingUpdatesProps) 
           table: 'booking_responses',
         },
         async (payload) => {
-          console.log('New booking response:', payload);
+          
           
           if (userRole === 'parent') {
             // Check if this response is for the parent's booking

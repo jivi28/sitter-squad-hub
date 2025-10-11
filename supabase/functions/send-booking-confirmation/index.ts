@@ -30,6 +30,28 @@ interface BookingConfirmationRequest {
   preferredLanguage?: string;
 }
 
+// Input validation helper
+const validateBookingData = (data: BookingConfirmationRequest): void => {
+  if (!data.bookingId || typeof data.bookingId !== 'string') {
+    throw new Error('Invalid booking ID');
+  }
+  if (!data.parentName || data.parentName.trim().length === 0) {
+    throw new Error('Parent name is required');
+  }
+  if (!data.sitterName || data.sitterName.trim().length === 0) {
+    throw new Error('Sitter name is required');
+  }
+  if (!data.bookingDate || isNaN(Date.parse(data.bookingDate))) {
+    throw new Error('Invalid booking date');
+  }
+  if (typeof data.numChildren !== 'number' || data.numChildren < 1) {
+    throw new Error('Invalid number of children');
+  }
+  if (typeof data.totalCost !== 'number' || data.totalCost < 0) {
+    throw new Error('Invalid total cost');
+  }
+};
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -37,9 +59,10 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    console.log("Booking confirmation email request received");
-    console.log("Request method:", req.method);
-    console.log("Request headers:", Object.fromEntries(req.headers.entries()));
+    const requestData: BookingConfirmationRequest = await req.json();
+    
+    // Validate input data
+    validateBookingData(requestData);
 
     const {
       bookingId,
@@ -55,7 +78,7 @@ const handler = async (req: Request): Promise<Response> => {
       address,
       specialNotes,
       preferredLanguage
-    }: BookingConfirmationRequest = await req.json();
+    } = requestData;
 
     // Resolve parent's email: prefer provided, otherwise fetch via admin API using service role
     let resolvedParentEmail = parentEmail;
@@ -70,8 +93,6 @@ const handler = async (req: Request): Promise<Response> => {
       }
       resolvedParentEmail = userData.user.email;
     }
-
-    console.log("Sending confirmation email to:", resolvedParentEmail);
 
     // Format date for better display
     const formattedDate = new Date(bookingDate).toLocaleDateString('en-US', {

@@ -31,6 +31,31 @@ interface SitterConfirmationRequest {
   emergencyContact?: string;
 }
 
+// Input validation helper
+const validateSitterData = (data: SitterConfirmationRequest): void => {
+  if (!data.bookingId || typeof data.bookingId !== 'string') {
+    throw new Error('Invalid booking ID');
+  }
+  if (!data.sitterUserId || typeof data.sitterUserId !== 'string') {
+    throw new Error('Invalid sitter user ID');
+  }
+  if (!data.parentName || data.parentName.trim().length === 0) {
+    throw new Error('Parent name is required');
+  }
+  if (!data.parentPhone || data.parentPhone.trim().length === 0) {
+    throw new Error('Parent phone is required');
+  }
+  if (!data.bookingDate || isNaN(Date.parse(data.bookingDate))) {
+    throw new Error('Invalid booking date');
+  }
+  if (typeof data.numChildren !== 'number' || data.numChildren < 1) {
+    throw new Error('Invalid number of children');
+  }
+  if (typeof data.totalCost !== 'number' || data.totalCost < 0) {
+    throw new Error('Invalid total cost');
+  }
+};
+
 const handler = async (req: Request): Promise<Response> => {
   // Handle CORS preflight requests
   if (req.method === "OPTIONS") {
@@ -38,7 +63,10 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
-    console.log("Sitter confirmation email request received");
+    const requestData: SitterConfirmationRequest = await req.json();
+    
+    // Validate input data
+    validateSitterData(requestData);
 
     const {
       bookingId,
@@ -55,7 +83,7 @@ const handler = async (req: Request): Promise<Response> => {
       specialNotes,
       preferredLanguage,
       emergencyContact
-    }: SitterConfirmationRequest = await req.json();
+    } = requestData;
 
     // Get sitter's email via admin API
     const { data: userData, error: getUserError } = await supabase.auth.admin.getUserById(sitterUserId);
@@ -65,7 +93,6 @@ const handler = async (req: Request): Promise<Response> => {
     }
 
     const sitterEmail = userData.user.email;
-    console.log("Sending booking confirmation to sitter:", sitterEmail);
 
     // Format date for better display
     const formattedDate = new Date(bookingDate).toLocaleDateString('en-US', {

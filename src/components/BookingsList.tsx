@@ -56,7 +56,7 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
           table: 'bookings',
         },
         (payload) => {
-          console.log('Booking update for sitter:', payload);
+          
           fetchBookings();
         }
       )
@@ -69,7 +69,7 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
 
   const fetchBookings = async () => {
     try {
-      console.log('BookingsList: fetchBookings called');
+      
       
       // Get current user
       const { data: { user } } = await supabase.auth.getUser();
@@ -79,7 +79,7 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
         return;
       }
       
-      console.log('BookingsList: Current user ID:', user.id);
+      
       setDebugInfo(`User ID: ${user.id}`);
 
       // Get sitter info using user_id instead of sitter id
@@ -102,7 +102,7 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
       }
 
       const sitterName = `${sitterData.first_name} ${sitterData.last_name}`;
-      console.log('BookingsList: Sitter name:', sitterName);
+      
       setDebugInfo(`Sitter: ${sitterName}`);
 
       // Fetch bookings where this sitter is selected
@@ -125,10 +125,10 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
         return;
       }
 
-      console.log('BookingsList: Raw bookings data:', data);
+      
       
       if (!data || data.length === 0) {
-        console.log('BookingsList: No bookings found for sitter:', sitterName);
+        
         setDebugInfo(`No bookings found for ${sitterName}`);
         setBookings([]);
         return;
@@ -165,7 +165,7 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
         setBookings(mappedData as any);
         setDebugInfo(`Found ${data?.length || 0} bookings (profile fetch failed)`);
       } else {
-        console.log('BookingsList: Fetched bookings with profiles:', bookingsWithProfiles);
+        
         // Map the data to ensure sitters is properly typed
         const mappedBookings = (bookingsWithProfiles || []).map((booking: any) => ({
           ...booking,
@@ -215,7 +215,7 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
               ? `${booking.profiles.first_name} ${booking.profiles.last_name}`
               : 'Parent';
             const address = booking.profiles?.address || '';
-            console.log('Attempting to send confirmation email for booking:', booking.id);
+            
             const { data: emailData, error: emailError } = await supabase.functions.invoke('send-booking-confirmation', {
               body: {
                 bookingId: booking.id,
@@ -232,7 +232,7 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
                 preferredLanguage: booking.preferred_language
               }
             });
-            console.log('Email function response:', { emailData, emailError });
+            
 
             if (emailError) {
               console.error('Failed to send confirmation email:', emailError);
@@ -242,7 +242,7 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
                 variant: 'destructive',
               });
             } else {
-              console.log('Confirmation email sent successfully');
+              
             }
           } catch (emailError) {
             console.error('Error sending confirmation email:', emailError);
