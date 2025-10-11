@@ -4,10 +4,11 @@ import { useToast } from '@/hooks/use-toast';
 
 interface Booking {
   id: string;
+  user_id: string;
   booking_date: string;
   start_time: string;
   end_time: string;
-  sitter_name: string;
+  sitter_id: string | null;
   sitter_hourly_rate: number;
   num_children: number;
   total_cost: number;
@@ -15,10 +16,14 @@ interface Booking {
   payment_status: string;
   special_notes?: string;
   preferred_language?: string;
-  sitter_id?: string;
   created_at: string;
   request_expires_at?: string;
   response_count?: number;
+  extension_count?: number;
+  sitters?: {
+    first_name: string;
+    last_name: string;
+  };
 }
 
 interface UseBookingUpdatesProps {
@@ -36,17 +41,23 @@ export const useBookingUpdates = ({ userId, userRole }: UseBookingUpdatesProps) 
       setLoading(true);
 
       if (userRole === 'parent') {
-        // Fetch parent bookings with response counts
+        // Fetch parent bookings with response counts and sitter info
         const { data, error } = await supabase
           .from('bookings')
-          .select('*')
+          .select(`
+            *,
+            sitters (
+              first_name,
+              last_name
+            )
+          `)
           .eq('user_id', userId)
           .order('created_at', { ascending: false });
 
         if (error) throw error;
 
         const bookingsWithCounts = await Promise.all(
-          (data || []).map(async (booking) => {
+          (data || []).map(async (booking: any) => {
             const { count } = await supabase
               .from('booking_responses')
               .select('*', { count: 'exact', head: true })
@@ -55,31 +66,47 @@ export const useBookingUpdates = ({ userId, userRole }: UseBookingUpdatesProps) 
 
             return {
               ...booking,
+              sitters: Array.isArray(booking.sitters) && booking.sitters.length > 0 
+                ? booking.sitters[0] 
+                : undefined,
               response_count: count || 0,
             };
           })
         );
 
-        setBookings(bookingsWithCounts);
+        setBookings(bookingsWithCounts as any);
       } else if (userRole === 'sitter') {
-        // Fetch sitter's bookings
+        // Fetch sitter's bookings using sitter_id
         const { data: sitterData } = await supabase
           .from('sitters')
-          .select('first_name, last_name')
+          .select('id, first_name, last_name')
           .eq('user_id', userId)
           .single();
 
         if (!sitterData) return;
 
-        const sitterName = `${sitterData.first_name} ${sitterData.last_name}`;
         const { data, error } = await supabase
           .from('bookings')
-          .select('*')
-          .eq('sitter_name', sitterName)
+          .select(`
+            *,
+            sitters (
+              first_name,
+              last_name
+            )
+          `)
+          .eq('sitter_id', sitterData.id)
           .order('booking_date', { ascending: true });
 
         if (error) throw error;
-        setBookings(data || []);
+        
+        const mappedBookings = (data || []).map((booking: any) => ({
+          ...booking,
+          sitters: Array.isArray(booking.sitters) && booking.sitters.length > 0 
+            ? booking.sitters[0] 
+            : undefined
+        }));
+        
+        setBookings(mappedBookings as any);
       }
     } catch (error) {
       console.error('Error fetching bookings:', error);

@@ -155,9 +155,15 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
 
       if (profileError) {
         console.error('BookingsList: Error fetching bookings with profiles:', profileError);
-        // Fall back to basic bookings without profiles
-        setBookings(data as Booking[]);
-        setDebugInfo(`Found ${data.length} bookings (profile fetch failed)`);
+        // Fall back to basic bookings without profiles - map sitters array to object
+        const mappedData = (data || []).map((booking: any) => ({
+          ...booking,
+          sitters: Array.isArray(booking.sitters) && booking.sitters.length > 0 
+            ? booking.sitters[0] 
+            : undefined
+        }));
+        setBookings(mappedData as any);
+        setDebugInfo(`Found ${data?.length || 0} bookings (profile fetch failed)`);
       } else {
         console.log('BookingsList: Fetched bookings with profiles:', bookingsWithProfiles);
         // Map the data to ensure sitters is properly typed

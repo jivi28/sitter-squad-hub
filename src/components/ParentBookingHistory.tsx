@@ -170,7 +170,7 @@ const ParentBookingHistory = () => {
   };
 
   const canRebook = (booking: Booking) => {
-    return booking.status === "completed" && booking.sitter_name;
+    return booking.status === "completed" && booking.sitter_id && booking.sitters;
   };
 
   const handleRebook = async () => {
@@ -208,9 +208,13 @@ const ParentBookingHistory = () => {
         throw error;
       }
 
+      const sitterName = selectedBooking.sitters 
+        ? `${selectedBooking.sitters.first_name} ${selectedBooking.sitters.last_name}`
+        : 'your sitter';
+
       toast({
         title: "Rebook Request Sent!",
-        description: `Your request has been sent to ${selectedBooking.sitter_name}. You'll be notified when they respond.`,
+        description: `Your request has been sent to ${sitterName}. You'll be notified when they respond.`,
       });
 
       // Reset form and close dialog
@@ -247,17 +251,23 @@ const ParentBookingHistory = () => {
 
       if (error) {
         if (error.code === '23505') { // unique constraint violation
+          const sitterName = booking.sitters 
+            ? `${booking.sitters.first_name} ${booking.sitters.last_name}`
+            : 'This sitter';
           toast({
             title: "Already Added",
-            description: `${booking.sitter_name} is already in your favorites.`,
+            description: `${sitterName} is already in your favorites.`,
           });
         } else {
           throw error;
         }
       } else {
+        const sitterName = booking.sitters 
+          ? `${booking.sitters.first_name} ${booking.sitters.last_name}`
+          : 'Sitter';
         toast({
           title: "Added to Favorites",
-          description: `${booking.sitter_name} has been added to your favorite sitters.`,
+          description: `${sitterName} has been added to your favorite sitters.`,
         });
       }
     } catch (error) {
@@ -353,7 +363,9 @@ const ParentBookingHistory = () => {
               <div className="flex items-center justify-between mb-2">
                 <CardTitle className="flex items-center gap-2">
                   <User className="h-5 w-5" />
-                  {booking.sitter_name || "Waiting for Sitter"}
+                  {booking.sitters 
+                    ? `${booking.sitters.first_name} ${booking.sitters.last_name}`
+                    : "Waiting for Sitter"}
                 </CardTitle>
                 <RequestExpirationTimer 
                   expiresAt={booking.request_expires_at || null}
@@ -418,10 +430,10 @@ const ParentBookingHistory = () => {
               )}
 
               {/* Show sitter contact info only for confirmed AND paid bookings */}
-              {booking.status === "confirmed" && booking.sitter_id && (
+              {booking.status === "confirmed" && booking.sitter_id && booking.sitters && (
                 <SitterContactInfo 
                   sitterId={booking.sitter_id}
-                  sitterName={booking.sitter_name || "Sitter"}
+                  sitterName={`${booking.sitters.first_name} ${booking.sitters.last_name}`}
                   bookingStatus={booking.status}
                   paymentStatus={booking.payment_status}
                 />
@@ -476,7 +488,11 @@ const ParentBookingHistory = () => {
                     </DialogTrigger>
                     <DialogContent>
                       <DialogHeader>
-                        <DialogTitle>Rebook {booking.sitter_name}</DialogTitle>
+                        <DialogTitle>
+                          Rebook {booking.sitters 
+                            ? `${booking.sitters.first_name} ${booking.sitters.last_name}`
+                            : 'Sitter'}
+                        </DialogTitle>
                         <DialogDescription>
                           Send a new booking request to your previous sitter.
                         </DialogDescription>
