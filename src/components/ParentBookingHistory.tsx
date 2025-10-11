@@ -12,9 +12,10 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ResponsiveDateInput } from "@/components/ui/responsive-date-input";
 import { ResponsiveTimeInput } from "@/components/ui/responsive-time-input";
-import SitterApplications from "./SitterApplications";
 import { RequestExpirationTimer } from "./RequestExpirationTimer";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { BookingStatusStepper } from "./BookingStatusStepper";
+import { CollapsibleApplications } from "./CollapsibleApplications";
 
 interface Booking {
   id: string;
@@ -32,6 +33,7 @@ interface Booking {
   sitter_id?: string;
   created_at: string;
   request_expires_at?: string;
+  response_count?: number;
 }
 
 interface RebookData {
@@ -122,8 +124,24 @@ const ParentBookingHistory = () => {
         throw error;
       }
 
-      console.log('Bookings fetched successfully:', data?.length || 0, 'bookings');
-      setBookings(data || []);
+      // Fetch response counts for each booking
+      const bookingsWithCounts = await Promise.all(
+        (data || []).map(async (booking) => {
+          const { count } = await supabase
+            .from("booking_responses")
+            .select("*", { count: "exact", head: true })
+            .eq("booking_id", booking.id)
+            .eq("response", "accepted");
+
+          return {
+            ...booking,
+            response_count: count || 0,
+          };
+        })
+      );
+
+      console.log('Bookings fetched successfully:', bookingsWithCounts?.length || 0, 'bookings');
+      setBookings(bookingsWithCounts || []);
     } catch (error) {
       console.error("Error fetching bookings:", error);
       toast({
@@ -360,27 +378,24 @@ const ParentBookingHistory = () => {
         {bookings.map((booking) => (
           <Card key={booking.id}>
             <CardHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between mb-2">
                 <CardTitle className="flex items-center gap-2">
                   <User className="h-5 w-5" />
                   {booking.sitter_name || "Waiting for Sitter"}
                 </CardTitle>
-                <div className="flex gap-2 flex-wrap">
-                  <Badge variant={getStatusColor(booking.status)}>
-                    {booking.status === "received_responses" ? "Received Applications" : booking.status}
-                  </Badge>
-                  <Badge variant={getPaymentStatusColor(booking.payment_status)}>
-                    Payment: {booking.payment_status}
-                  </Badge>
-                  <RequestExpirationTimer 
-                    expiresAt={booking.request_expires_at || null}
-                    status={booking.status}
-                  />
-                </div>
+                <RequestExpirationTimer 
+                  expiresAt={booking.request_expires_at || null}
+                  status={booking.status}
+                />
               </div>
-              <CardDescription>
+              <CardDescription className="mb-4">
                 Booking created on {new Date(booking.created_at).toLocaleDateString()}
               </CardDescription>
+              <BookingStatusStepper
+                status={booking.status}
+                paymentStatus={booking.payment_status}
+                responseCount={booking.response_count}
+              />
             </CardHeader>
             <CardContent>
               {booking.status === "pending" && booking.request_expires_at && (
@@ -430,14 +445,16 @@ const ParentBookingHistory = () => {
                 </div>
               )}
 
-              {booking.status === "received_responses" && (
+              {booking.status === "received_responses" && booking.response_count && booking.response_count > 0 && (
                 <div className="mt-4">
-                  <SitterApplications 
-                    bookingId={booking.id} 
+                  <CollapsibleApplications
+                    bookingId={booking.id}
+                    responseCount={booking.response_count}
                     onSitterSelected={() => {
                       // Refresh bookings after sitter selection
                       fetchBookings();
-                    }} 
+                    }}
+                    defaultExpanded={true}
                   />
                 </div>
               )}
