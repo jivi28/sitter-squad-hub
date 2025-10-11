@@ -118,15 +118,16 @@ const Header = () => {
           </nav>
 
           <button
-            className="md:hidden p-2"
+            className="md:hidden p-2 min-w-[44px] min-h-[44px] flex items-center justify-center active:scale-95 transition-transform"
             onClick={() => setIsMenuOpen(!isMenuOpen)}
+            aria-label={isMenuOpen ? "Close menu" : "Open menu"}
           >
             {isMenuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
 
         {isMenuOpen && (
-          <div className="md:hidden mt-4 pb-4 border-t border-border pt-4">
+          <div className="md:hidden mt-4 pb-4 border-t border-border pt-4 animate-fade-in">
             <nav className="flex flex-col space-y-4">
               <a 
                 href={user && userType === 'parent' ? "/parent-dashboard?tab=book-sitter" : "/#how-it-works"} 
