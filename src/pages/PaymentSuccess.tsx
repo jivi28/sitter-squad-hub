@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,46 +13,122 @@ const PaymentSuccess = () => {
   const [verifying, setVerifying] = useState(true);
   const [verified, setVerified] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [pollingCount, setPollingCount] = useState(0);
   const { toast } = useToast();
+  const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
 
   useEffect(() => {
     if (bookingId) {
-      verifyPayment();
+      checkPaymentStatus();
     } else {
       setError("No booking ID provided");
       setVerifying(false);
     }
+
+    // Cleanup polling on unmount
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+      }
+    };
   }, [bookingId]);
 
-  const verifyPayment = async () => {
+  // Phase 5.1 & 5.2: Query database directly and add polling for webhook delays
+  const checkPaymentStatus = async () => {
     try {
-      const { data, error } = await supabase.functions.invoke('verify-booking-payment', {
-        body: { booking_id: bookingId }
-      });
+      console.log('Checking payment status for booking:', bookingId);
+      
+      const { data: booking, error: fetchError } = await supabase
+        .from('bookings')
+        .select('payment_status, status, total_cost')
+        .eq('id', bookingId)
+        .single();
 
-      if (error) {
-        throw error;
+      if (fetchError) {
+        throw new Error(`Failed to fetch booking: ${fetchError.message}`);
       }
 
-      if (data.success) {
+      console.log('Booking payment status:', booking?.payment_status);
+
+      if (booking?.payment_status === 'completed' || booking?.payment_status === 'paid') {
+        // Payment confirmed by webhook
         setVerified(true);
+        setVerifying(false);
+        
+        if (pollingIntervalRef.current) {
+          clearInterval(pollingIntervalRef.current);
+        }
+
         toast({
           title: "Payment Verified!",
           description: "Your booking payment has been confirmed.",
         });
+      } else if (booking?.payment_status === 'pending') {
+        // Phase 5.2: Webhook hasn't updated yet - start/continue polling
+        if (pollingCount === 0) {
+          console.log('Payment still pending, starting polling...');
+          setPollingCount(1);
+          
+          // Poll every 2 seconds for up to 30 seconds (15 attempts)
+          let attempts = 0;
+          pollingIntervalRef.current = setInterval(async () => {
+            attempts++;
+            setPollingCount(attempts);
+            
+            console.log(`Polling attempt ${attempts}/15`);
+            
+            const { data: updatedBooking } = await supabase
+              .from('bookings')
+              .select('payment_status')
+              .eq('id', bookingId)
+              .single();
+
+            if (updatedBooking?.payment_status === 'completed' || updatedBooking?.payment_status === 'paid') {
+              console.log('Payment confirmed during polling');
+              setVerified(true);
+              setVerifying(false);
+              
+              if (pollingIntervalRef.current) {
+                clearInterval(pollingIntervalRef.current);
+              }
+
+              toast({
+                title: "Payment Verified!",
+                description: "Your booking payment has been confirmed.",
+              });
+            } else if (attempts >= 15) {
+              // 30 seconds passed, stop polling
+              console.warn('Polling timeout - payment still pending after 30 seconds');
+              setError("Payment is processing. Please check your bookings in a few minutes.");
+              setVerifying(false);
+              
+              if (pollingIntervalRef.current) {
+                clearInterval(pollingIntervalRef.current);
+              }
+
+              toast({
+                title: "Payment Processing",
+                description: "Your payment is being processed. Check your bookings shortly.",
+                variant: "default",
+              });
+            }
+          }, 2000); // Poll every 2 seconds
+        }
       } else {
-        setError(data.message || "Payment verification failed");
+        // Payment failed or other status
+        setError(`Payment status: ${booking?.payment_status || 'unknown'}`);
+        setVerifying(false);
       }
     } catch (error) {
       console.error("Payment verification error:", error);
-      setError(error.message || "Failed to verify payment");
+      setError(error instanceof Error ? error.message : "Failed to verify payment");
+      setVerifying(false);
+      
       toast({
         title: "Verification Error", 
         description: "There was an issue verifying your payment. Please contact support.",
         variant: "destructive",
       });
-    } finally {
-      setVerifying(false);
     }
   };
 
@@ -66,8 +142,14 @@ const PaymentSuccess = () => {
               {verifying ? (
                 <>
                   <Loader2 className="h-16 w-16 animate-spin mx-auto mb-4 text-primary" />
-                  <CardTitle>Verifying Payment...</CardTitle>
-                  <CardDescription>Please wait while we confirm your payment</CardDescription>
+                  <CardTitle>
+                    {pollingCount > 0 ? "Processing Payment..." : "Verifying Payment..."}
+                  </CardTitle>
+                  <CardDescription>
+                    {pollingCount > 0 
+                      ? `Waiting for payment confirmation... (${pollingCount * 2}s)`
+                      : "Please wait while we confirm your payment"}
+                  </CardDescription>
                 </>
               ) : verified ? (
                 <>
@@ -109,7 +191,7 @@ const PaymentSuccess = () => {
                     <Button asChild className="w-full">
                       <Link to="/parent-dashboard">Check My Bookings</Link>
                     </Button>
-                    <Button variant="outline" onClick={verifyPayment} disabled={verifying}>
+                    <Button variant="outline" onClick={checkPaymentStatus} disabled={verifying}>
                       Try Again
                     </Button>
                   </div>
