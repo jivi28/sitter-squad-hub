@@ -5,17 +5,20 @@ import heroImage from "@/assets/hero-image.jpg";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { detectUserRole, UserRoles } from "@/utils/roleDetection";
+import { motion } from "framer-motion";
+import { useInView } from "react-intersection-observer";
+import CountUp from "react-countup";
 
 const Hero = () => {
   const { user } = useAuth();
   const [hasCompleteProfile, setHasCompleteProfile] = useState(false);
   const [userRoles, setUserRoles] = useState<UserRoles>({ isParent: false, isSitter: false, hasBothRoles: false });
+  const [ref, inView] = useInView({ triggerOnce: true, threshold: 0.1 });
 
   useEffect(() => {
     const checkProfile = async () => {
       if (!user) return;
 
-      // Detect user roles
       const roles = await detectUserRole(user.id);
       setUserRoles(roles);
       
@@ -29,7 +32,6 @@ const Hero = () => {
         if (error) throw error;
 
         if (data) {
-          // Check if all required fields are filled
           const isComplete = !!(
             data.first_name &&
             data.last_name &&
@@ -50,7 +52,6 @@ const Hero = () => {
 
   const getSmartRedirect = async (userId: string): Promise<string> => {
     try {
-      // Fetch user's bookings to determine their status
       const { data: bookings, error } = await supabase
         .from('bookings')
         .select('*')
@@ -59,59 +60,75 @@ const Hero = () => {
 
       if (error) {
         console.error('Error fetching bookings:', error);
-        return '/parent-dashboard?tab=book-sitter'; // Default for new users
+        return '/parent-dashboard?tab=book-sitter';
       }
 
-      // No bookings = new user, guide to booking
       if (!bookings || bookings.length === 0) {
         return '/parent-dashboard?tab=book-sitter';
       }
 
-      // Check for active bookings that need attention
       const hasActiveBookings = bookings.some(booking => 
         booking.status === 'pending' || 
         booking.status === 'confirmed' || 
         booking.payment_status === 'pending'
       );
 
-      // Users with active bookings should see their booking history
       if (hasActiveBookings) {
         return '/parent-dashboard?tab=bookings';
       }
 
-      // Users with only completed bookings can book again
       return '/parent-dashboard?tab=book-sitter';
     } catch (error) {
       console.error('Error in smart redirect:', error);
-      return '/parent-dashboard?tab=book-sitter'; // Safe fallback
+      return '/parent-dashboard?tab=book-sitter';
     }
   };
 
   const handleFindSitterClick = async () => {
     if (user && hasCompleteProfile) {
-      // Get smart redirect based on user's booking status
       const redirectUrl = await getSmartRedirect(user.id);
       window.location.href = redirectUrl;
     } else {
       window.location.href = '/parent-signup';
     }
   };
+
   return (
-    <section className="bg-gradient-soft py-12 sm:py-16 md:py-20">
+    <section className="bg-gradient-soft py-12 sm:py-16 md:py-20 overflow-hidden">
       <div className="container mx-auto px-4 sm:px-6">
         <div className="grid lg:grid-cols-2 gap-8 md:gap-12 items-center">
-          <div className="space-y-6 sm:space-y-8">
+          <motion.div 
+            className="space-y-6 sm:space-y-8"
+            initial={{ opacity: 0, x: -50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+          >
             <div className="space-y-3 sm:space-y-4">
-              <h1 className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight">
+              <motion.h1 
+                className="text-3xl sm:text-4xl md:text-5xl lg:text-6xl font-bold text-foreground leading-tight"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.2, duration: 0.6 }}
+              >
                 Trusted School-Based 
                 <span className="text-primary"> Babysitters</span>
-              </h1>
-              <p className="text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed">
+              </motion.h1>
+              <motion.p 
+                className="text-base sm:text-lg md:text-xl text-muted-foreground leading-relaxed"
+                initial={{ opacity: 0, y: 20 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: 0.4, duration: 0.6 }}
+              >
                 Connect with verified student sitters from your local schools. Safe, reliable, and affordable childcare when you need it most.
-              </p>
+              </motion.p>
             </div>
 
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+            <motion.div 
+              className="flex flex-col sm:flex-row gap-3 sm:gap-4"
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ delay: 0.6, duration: 0.6 }}
+            >
               {user ? (
                 <>
                   {userRoles.isSitter && !userRoles.isParent && (
@@ -140,41 +157,69 @@ const Hero = () => {
                   </Button>
                 </>
               )}
-            </div>
+            </motion.div>
 
-            <div className="flex flex-wrap items-center gap-3 sm:gap-4 md:gap-6 lg:gap-8 pt-2 sm:pt-4">
+            <motion.div 
+              ref={ref}
+              className="flex flex-wrap items-center gap-3 sm:gap-4 md:gap-6 lg:gap-8 pt-2 sm:pt-4"
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ delay: 0.8, duration: 0.6 }}
+            >
               <div className="flex items-center space-x-1.5 sm:space-x-2">
                 <div className="flex space-x-0.5 sm:space-x-1">
                   {[...Array(5)].map((_, i) => (
-                    <Star key={i} className="w-4 h-4 sm:w-5 sm:h-5 fill-secondary text-secondary" />
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, scale: 0 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      transition={{ delay: 1 + (i * 0.1), duration: 0.3 }}
+                    >
+                      <Star className="w-4 h-4 sm:w-5 sm:h-5 fill-secondary text-secondary" />
+                    </motion.div>
                   ))}
                 </div>
-                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">4.9/5 Rating</span>
+                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
+                  {inView && <CountUp end={4.9} decimals={1} duration={2} />}/5 Rating
+                </span>
               </div>
               <div className="flex items-center space-x-1.5 sm:space-x-2">
-                <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-trust" />
+                <Shield className="w-4 h-4 sm:w-5 sm:h-5 text-trust animate-pulse-glow" />
                 <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">Verified Sitters</span>
               </div>
               <div className="flex items-center space-x-1.5 sm:space-x-2">
                 <Users className="w-4 h-4 sm:w-5 sm:h-5 text-primary" />
-                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">30+ Families</span>
+                <span className="text-xs sm:text-sm text-muted-foreground whitespace-nowrap">
+                  {inView && <CountUp end={30} duration={2} />}+ Families
+                </span>
               </div>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
 
-          <div className="relative">
-            <div className="relative overflow-hidden rounded-2xl shadow-card">
+          <motion.div 
+            className="relative"
+            initial={{ opacity: 0, x: 50 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.8, ease: "easeOut", delay: 0.3 }}
+          >
+            <div className="relative overflow-hidden rounded-2xl shadow-card hover-lift">
               <img 
                 src={heroImage} 
                 alt="Happy family with children enjoying safe childcare" 
                 className="w-full h-auto object-cover"
+                loading="eager"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-primary/10 to-transparent"></div>
             </div>
             
-            <div className="absolute -bottom-6 -left-6 bg-card p-6 rounded-xl shadow-card border border-border">
+            <motion.div 
+              className="absolute -bottom-6 -left-6 bg-card p-6 rounded-xl shadow-card border border-border"
+              initial={{ opacity: 0, scale: 0.8 }}
+              animate={{ opacity: 1, scale: 1 }}
+              transition={{ delay: 1.2, duration: 0.5, type: "spring" }}
+            >
               <div className="flex items-center space-x-3">
-                <div className="w-12 h-12 bg-trust rounded-full flex items-center justify-center">
+                <div className="w-12 h-12 bg-trust rounded-full flex items-center justify-center animate-pulse-glow">
                   <Shield className="w-6 h-6 text-trust-foreground" />
                 </div>
                 <div>
@@ -182,8 +227,8 @@ const Hero = () => {
                   <p className="text-sm text-muted-foreground">Background Checked</p>
                 </div>
               </div>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
         </div>
       </div>
     </section>

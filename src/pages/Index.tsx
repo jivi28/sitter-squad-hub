@@ -5,6 +5,7 @@ import HowItWorks from "@/components/HowItWorks";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { detectUserRole } from "@/utils/roleDetection";
+import { motion } from "framer-motion";
 
 const Index = () => {
   const { user, loading } = useAuth();
@@ -75,10 +76,19 @@ const Index = () => {
   if (loading || user) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto mb-4"></div>
+        <motion.div 
+          className="text-center"
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <motion.div 
+            className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary mx-auto mb-4"
+            animate={{ rotate: 360 }}
+            transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          />
           <p className="text-muted-foreground">Loading...</p>
-        </div>
+        </motion.div>
       </div>
     );
   }
