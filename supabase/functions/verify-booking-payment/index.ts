@@ -24,6 +24,20 @@ serve(async (req) => {
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
 
+    // SECURITY: Authenticate user first
+    const authHeader = req.headers.get("Authorization");
+    if (!authHeader) {
+      throw new Error("No authorization header provided");
+    }
+
+    const token = authHeader.replace("Bearer ", "");
+    const { data: userData, error: userError } = await supabaseClient.auth.getUser(token);
+    if (userError || !userData.user) {
+      throw new Error("User not authenticated");
+    }
+
+    console.log(`Authenticated user: ${userData.user.id}`);
+
     // Parse request body
     const { booking_id }: VerificationRequest = await req.json();
     if (!booking_id) {
@@ -31,6 +45,21 @@ serve(async (req) => {
     }
 
     console.log(`Verifying payment for booking: ${booking_id}`);
+
+    // SECURITY: Verify this booking belongs to the authenticated user
+    const { data: booking, error: bookingError } = await supabaseClient
+      .from("bookings")
+      .select("user_id")
+      .eq("id", booking_id)
+      .single();
+
+    if (bookingError || !booking) {
+      throw new Error("Booking not found");
+    }
+
+    if (booking.user_id !== userData.user.id) {
+      throw new Error("Unauthorized: This booking does not belong to you");
+    }
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {

@@ -82,6 +82,27 @@ const BookingRequests = () => {
     supabase.auth.getUser().then(({ data: { user } }) => {
       if (user) localStorage.setItem('user_id', user.id);
     });
+
+    // Set up real-time listener for new booking requests
+    const channel = supabase
+      .channel('booking-requests-sitter')
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'bookings',
+        },
+        () => {
+          console.log('New booking request created');
+          fetchBookingRequests();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
   }, []);
 
   const fetchBookingRequests = async () => {
@@ -216,6 +237,14 @@ const BookingRequests = () => {
 
   // Filter and sort requests
   const filteredRequests = requests.filter(request => {
+    // Filter out expired requests
+    if (request.request_expires_at) {
+      const expiryTime = new Date(request.request_expires_at).getTime();
+      if (expiryTime < Date.now()) {
+        return false; // Don't show expired requests
+      }
+    }
+
     // Date range filter
     if (filters.dateRange.from) {
       const bookingDate = new Date(request.booking_date);

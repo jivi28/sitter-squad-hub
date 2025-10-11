@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { useBookingUpdates } from "@/hooks/useBookingUpdates";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -18,6 +19,7 @@ import { BookingStatusStepper } from "./BookingStatusStepper";
 import { CollapsibleApplications } from "./CollapsibleApplications";
 import { EmptyState } from "./EmptyState";
 import { useNavigate } from "react-router-dom";
+import { ExtendRequestButton } from "./ExtendRequestButton";
 
 interface Booking {
   id: string;
@@ -36,6 +38,7 @@ interface Booking {
   created_at: string;
   request_expires_at?: string;
   response_count?: number;
+  extension_count?: number;
 }
 
 interface RebookData {
@@ -48,8 +51,14 @@ interface RebookData {
 const ParentBookingHistory = () => {
   const { user } = useAuth();
   const { toast } = useToast();
-  const [bookings, setBookings] = useState<Booking[]>([]);
-  const [loading, setLoading] = useState(true);
+  
+  // Use real-time booking updates hook
+  const { bookings: realtimeBookings, loading, refetch: fetchBookings } = useBookingUpdates({
+    userId: user?.id || '',
+    userRole: 'parent'
+  });
+  
+  const [bookings, setBookings] = useState<Booking[]>(realtimeBookings);
   const [rebookData, setRebookData] = useState<RebookData>({
     booking_date: "",
     start_time: "",
@@ -60,99 +69,49 @@ const ParentBookingHistory = () => {
   const [rebooking, setRebooking] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState<string | null>(null);
 
+  // Sync real-time bookings to local state
   useEffect(() => {
-    if (user) {
-      fetchBookings();
-      
-      // Set up real-time listener for new booking responses
-      const channel = supabase
-        .channel('booking-responses-changes')
-        .on(
-          'postgres_changes',
-          {
-            event: 'INSERT',
-            schema: 'public',
-            table: 'booking_responses',
-            filter: `response=eq.accepted`
-          },
-          async (payload) => {
-            console.log('New sitter application received:', payload);
-            
-            // Check if this response is for one of the user's bookings
-            const { data: booking } = await supabase
-              .from('bookings')
-              .select('user_id')
-              .eq('id', payload.new.booking_id)
-              .single();
-            
-            if (booking?.user_id === user.id) {
-              // Show notification
-              toast({
-                title: "New Sitter Application!",
-                description: "A sitter has applied for one of your booking requests.",
-              });
-              
-              // Refresh bookings to show the new application
-              fetchBookings();
-            }
-          }
-        )
-        .subscribe();
+    setBookings(realtimeBookings);
+  }, [realtimeBookings]);
 
-      return () => {
-        supabase.removeChannel(channel);
-      };
-    }
-  }, [user]);
-
-  const fetchBookings = async () => {
-    if (!user) {
-      console.log('No user available for fetching bookings');
+  // Extension handling
+  const handleExtendRequest = async (bookingId: string, currentExtensionCount: number) => {
+    if (currentExtensionCount >= 2) {
+      toast({
+        title: "Extension Limit Reached",
+        description: "You can only extend a request twice. Please create a new booking request.",
+        variant: "destructive",
+      });
       return;
     }
 
     try {
-      setLoading(true);
-      console.log('Fetching bookings for user:', user.id);
-      
-      const { data, error } = await supabase
-        .from("bookings")
-        .select("*")
-        .eq("user_id", user.id)
-        .order("created_at", { ascending: false });
+      const newExpiryDate = new Date();
+      newExpiryDate.setHours(newExpiryDate.getHours() + 12);
 
-      if (error) {
-        console.error('Booking fetch error:', error);
-        throw error;
-      }
-
-      // Fetch response counts for each booking
-      const bookingsWithCounts = await Promise.all(
-        (data || []).map(async (booking) => {
-          const { count } = await supabase
-            .from("booking_responses")
-            .select("*", { count: "exact", head: true })
-            .eq("booking_id", booking.id)
-            .eq("response", "accepted");
-
-          return {
-            ...booking,
-            response_count: count || 0,
-          };
+      const { error } = await supabase
+        .from('bookings')
+        .update({
+          request_expires_at: newExpiryDate.toISOString(),
+          extension_count: currentExtensionCount + 1,
         })
-      );
+        .eq('id', bookingId);
 
-      console.log('Bookings fetched successfully:', bookingsWithCounts?.length || 0, 'bookings');
-      setBookings(bookingsWithCounts || []);
+      if (error) throw error;
+
+      toast({
+        title: "Request Extended",
+        description: "Your booking request has been extended by 12 hours.",
+      });
+
+      fetchBookings();
     } catch (error) {
-      console.error("Error fetching bookings:", error);
+      console.error("Error extending request:", error);
       toast({
         title: "Error",
-        description: "Failed to load booking history. Please try again.",
+        description: "Failed to extend request. Please try again.",
         variant: "destructive",
       });
-    } finally {
-      setLoading(false);
     }
   };
 
@@ -578,9 +537,17 @@ const ParentBookingHistory = () => {
                       </div>
                     </DialogContent>
                   </Dialog>
-                )}
-                
-                {booking.sitter_id && booking.status === "completed" && (
+                 )}
+                 
+                 {booking.status === "pending" && booking.request_expires_at && (
+                   <ExtendRequestButton
+                     bookingId={booking.id}
+                     extensionCount={booking.extension_count || 0}
+                     onExtend={handleExtendRequest}
+                   />
+                 )}
+                 
+                 {booking.sitter_id && booking.status === "completed" && (
                   <Button
                     variant="outline"
                     size="sm"

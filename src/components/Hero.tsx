@@ -4,14 +4,20 @@ import { Star, Shield, Users } from "lucide-react";
 import heroImage from "@/assets/hero-image.jpg";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { detectUserRole, UserRoles } from "@/utils/roleDetection";
 
 const Hero = () => {
   const { user } = useAuth();
   const [hasCompleteProfile, setHasCompleteProfile] = useState(false);
+  const [userRoles, setUserRoles] = useState<UserRoles>({ isParent: false, isSitter: false, hasBothRoles: false });
 
   useEffect(() => {
     const checkProfile = async () => {
       if (!user) return;
+
+      // Detect user roles
+      const roles = await detectUserRole(user.id);
+      setUserRoles(roles);
       
       try {
         const { data, error } = await supabase
@@ -107,18 +113,32 @@ const Hero = () => {
 
             <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
               {user ? (
-                <Button variant="hero" size="lg" className="text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 w-full sm:w-auto" onClick={handleFindSitterClick}>
-                  Find a Sitter Now
-                </Button>
+                <>
+                  {userRoles.isSitter && !userRoles.isParent && (
+                    <Button variant="hero" size="lg" className="text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 w-full sm:w-auto" onClick={() => window.location.href = '/sitter-dashboard'}>
+                      View Dashboard
+                    </Button>
+                  )}
+                  {(userRoles.isParent || userRoles.hasBothRoles) && (
+                    <Button variant="hero" size="lg" className="text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 w-full sm:w-auto" onClick={handleFindSitterClick}>
+                      Find a Sitter Now
+                    </Button>
+                  )}
+                  {userRoles.hasBothRoles && (
+                    <Button variant="book" size="lg" className="text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 w-full sm:w-auto" onClick={() => window.location.href = '/sitter-dashboard'}>
+                      Sitter Dashboard
+                    </Button>
+                  )}
+                </>
               ) : (
-                <Button variant="hero" size="lg" className="text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 w-full sm:w-auto" onClick={() => window.location.href = '/auth'}>
-                  Sign In to Book
-                </Button>
-              )}
-              {!user && (
-                <Button variant="book" size="lg" className="text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 w-full sm:w-auto" onClick={() => window.location.href = '/sitter-auth'}>
-                  Become a Sitter
-                </Button>
+                <>
+                  <Button variant="hero" size="lg" className="text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 w-full sm:w-auto" onClick={() => window.location.href = '/auth?role=parent'}>
+                    Sign In to Book
+                  </Button>
+                  <Button variant="book" size="lg" className="text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 w-full sm:w-auto" onClick={() => window.location.href = '/auth?role=sitter'}>
+                    Become a Sitter
+                  </Button>
+                </>
               )}
             </div>
 

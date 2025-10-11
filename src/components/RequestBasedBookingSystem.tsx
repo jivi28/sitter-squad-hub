@@ -90,6 +90,28 @@ const RequestBasedBookingSystem = () => {
       });
       return;
     }
+
+    // Check pending booking limit
+    try {
+      const { count, error: countError } = await supabase
+        .from('bookings')
+        .select('*', { count: 'exact', head: true })
+        .eq('user_id', user.id)
+        .eq('status', 'pending');
+
+      if (countError) throw countError;
+
+      if (count && count >= 10) {
+        toast({
+          title: "Booking Limit Reached",
+          description: "You have 10 pending requests. Please wait for responses or cancel some requests before creating new ones.",
+          variant: "destructive",
+        });
+        return;
+      }
+    } catch (error) {
+      console.error("Error checking booking limit:", error);
+    }
     
     if (!isRequestComplete()) {
       toast({

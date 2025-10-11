@@ -4,13 +4,25 @@ import Hero from "@/components/Hero";
 import HowItWorks from "@/components/HowItWorks";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
+import { detectUserRole } from "@/utils/roleDetection";
 
 const Index = () => {
   const { user, loading } = useAuth();
 
   const getSmartRedirect = async (userId: string): Promise<string> => {
     try {
-      // Fetch user's bookings to determine their status
+      // Detect user role first
+      const roles = await detectUserRole(userId);
+
+      // If user is only a sitter, redirect to sitter dashboard
+      if (roles.isSitter && !roles.isParent) {
+        return '/sitter-dashboard';
+      }
+
+      // If user has both roles, prioritize parent dashboard (or you could add a role selector)
+      // For now, parent dashboard is default for dual-role users
+
+      // Fetch user's bookings to determine their status (parent flow)
       const { data: bookings, error } = await supabase
         .from('bookings')
         .select('*')
@@ -19,7 +31,7 @@ const Index = () => {
 
       if (error) {
         console.error('Error fetching bookings:', error);
-        return '/parent-dashboard?tab=book-sitter'; // Default for new users
+        return '/parent-dashboard?tab=book-sitter';
       }
 
       // No bookings = new user, guide to booking
@@ -43,7 +55,7 @@ const Index = () => {
       return '/parent-dashboard?tab=book-sitter';
     } catch (error) {
       console.error('Error in smart redirect:', error);
-      return '/parent-dashboard?tab=book-sitter'; // Safe fallback
+      return '/parent-dashboard?tab=book-sitter';
     }
   };
 

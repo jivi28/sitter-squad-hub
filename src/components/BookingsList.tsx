@@ -40,7 +40,28 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
 
   useEffect(() => {
     fetchBookings();
-  }, []); // Remove sitterId dependency since we use auth user
+
+    // Set up real-time listener for booking updates
+    const channel = supabase
+      .channel('bookings-sitter-updates')
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'bookings',
+        },
+        (payload) => {
+          console.log('Booking update for sitter:', payload);
+          fetchBookings();
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, []);
 
   const fetchBookings = async () => {
     try {
