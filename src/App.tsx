@@ -16,6 +16,7 @@ import Index from "./pages/Index";
 // Lazy load all other routes for code splitting
 const About = lazy(() => import("./pages/About"));
 const Auth = lazy(() => import("./pages/Auth"));
+const AuthCallback = lazy(() => import("./pages/AuthCallback"));
 const ParentSignup = lazy(() => import("./pages/ParentSignup"));
 const SitterSignup = lazy(() => import("./pages/SitterSignup"));
 const SitterAuth = lazy(() => import("./pages/SitterAuth"));
@@ -60,6 +61,7 @@ const AppContent = () => {
         <Route path="/" element={<Index />} />
         <Route path="/about" element={<About />} />
         <Route path="/auth" element={<Auth />} />
+        <Route path="/auth-callback" element={<AuthCallback />} />
         <Route path="/parent-signup" element={<ParentSignup />} />
         <Route path="/parent-dashboard" element={<ParentDashboard />} />
         <Route path="/sitter-signup" element={<SitterSignup />} />

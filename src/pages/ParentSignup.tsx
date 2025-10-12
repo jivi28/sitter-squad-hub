@@ -73,8 +73,8 @@ const ParentSignup = () => {
           const isExplicitAccess = urlParams.get('edit') === 'true';
 
           if (isComplete && !isExplicitAccess) {
-            // Redirect to main page if profile is already complete and not explicit access
-            window.location.href = '/';
+            // Redirect to dashboard if profile is already complete and not explicit access
+            window.location.href = '/parent-dashboard';
             return;
           }
 
@@ -168,8 +168,8 @@ const ParentSignup = () => {
         });
       }
 
-      // Redirect to main page and scroll to booking
-      window.location.href = '/#booking-system';
+      // Redirect to parent dashboard
+      window.location.href = '/parent-dashboard?tab=book-sitter';
     } catch (error: any) {
       console.error('Profile save error:', error);
       setError(error.message || 'Failed to save profile');

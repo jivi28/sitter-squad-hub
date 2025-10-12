@@ -204,11 +204,12 @@ const Auth = () => {
       // Store role preference before OAuth redirect
       localStorage.setItem('pending_role', selectedRole);
       
-      const redirectPath = selectedRole === 'sitter' ? '/sitter-signup' : '/parent-signup';
+      // Redirect to auth callback handler instead of directly to signup
+      const redirectPath = '/auth-callback';
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
-          redirectTo: `${window.location.origin}${redirectPath}`
+          redirectTo: `${window.location.origin}${redirectPath}?role=${selectedRole}`
         }
       });
 
