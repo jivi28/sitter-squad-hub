@@ -222,7 +222,7 @@ const SitterSignup = () => {
           // Create new profile
           const { error } = await supabase
             .from('sitters')
-            .insert([sitterData]);
+            .upsert([sitterData], { onConflict: 'user_id' });
 
           if (error) throw error;
           
