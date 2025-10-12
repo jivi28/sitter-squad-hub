@@ -61,12 +61,14 @@ const ParentSignup = () => {
           setHasProfile(true);
           
           // Check if profile is complete (all required fields filled)
-          const isComplete = data.first_name && 
-                           data.last_name && 
-                           data.phone && 
-                           data.address && 
-                           data.num_children && 
-                           data.children_ages;
+           const isNonEmpty = (v: any) => typeof v === 'string' && v.trim().length > 0;
+           const essentialsComplete = isNonEmpty(data.first_name) && 
+                            isNonEmpty(data.last_name) && 
+                            isNonEmpty(data.phone) && 
+                            isNonEmpty(data.address);
+           const validNumChildren = typeof data.num_children === 'number' && data.num_children >= 0;
+           const childrenInfoOk = data.num_children === 0 ? true : isNonEmpty(data.children_ages);
+           const isComplete = essentialsComplete && validNumChildren && childrenInfoOk;
 
           // Check if user is explicitly accessing profile page (via "My Profile" button)
           const urlParams = new URLSearchParams(window.location.search);
@@ -158,7 +160,7 @@ const ParentSignup = () => {
         // Create new profile
         const { error } = await supabase
           .from('profiles')
-          .insert(profileData);
+          .upsert([profileData], { onConflict: 'user_id' });
 
         if (error) throw error;
 

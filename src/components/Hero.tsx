@@ -32,14 +32,14 @@ const Hero = () => {
         if (error) throw error;
 
         if (data) {
-          const isComplete = !!(
-            data.first_name &&
-            data.last_name &&
-            data.phone &&
-            data.address &&
-            data.num_children &&
-            data.children_ages
-          );
+          const isNonEmpty = (v: any) => typeof v === 'string' && v.trim().length > 0;
+          const essentialsComplete = isNonEmpty(data.first_name) &&
+            isNonEmpty(data.last_name) &&
+            isNonEmpty(data.phone) &&
+            isNonEmpty(data.address);
+          const validNumChildren = typeof data.num_children === 'number' && data.num_children >= 0;
+          const childrenInfoOk = data.num_children === 0 ? true : isNonEmpty(data.children_ages);
+          const isComplete = essentialsComplete && validNumChildren && childrenInfoOk;
           setHasCompleteProfile(isComplete);
         }
       } catch (error) {
