@@ -153,49 +153,49 @@ export type Database = {
       }
       profiles: {
         Row: {
-          address: string
-          children_ages: string
+          address: string | null
+          children_ages: string | null
           created_at: string
           emergency_contact: string | null
-          first_name: string
+          first_name: string | null
           id: string
-          last_name: string
-          num_children: number
+          last_name: string | null
+          num_children: number | null
           num_pets: number | null
           pet_details: string | null
-          phone: string
+          phone: string | null
           special_needs: string | null
           updated_at: string
           user_id: string
         }
         Insert: {
-          address: string
-          children_ages: string
+          address?: string | null
+          children_ages?: string | null
           created_at?: string
           emergency_contact?: string | null
-          first_name: string
+          first_name?: string | null
           id?: string
-          last_name: string
-          num_children: number
+          last_name?: string | null
+          num_children?: number | null
           num_pets?: number | null
           pet_details?: string | null
-          phone: string
+          phone?: string | null
           special_needs?: string | null
           updated_at?: string
           user_id: string
         }
         Update: {
-          address?: string
-          children_ages?: string
+          address?: string | null
+          children_ages?: string | null
           created_at?: string
           emergency_contact?: string | null
-          first_name?: string
+          first_name?: string | null
           id?: string
-          last_name?: string
-          num_children?: number
+          last_name?: string | null
+          num_children?: number | null
           num_pets?: number | null
           pet_details?: string | null
-          phone?: string
+          phone?: string | null
           special_needs?: string | null
           updated_at?: string
           user_id?: string

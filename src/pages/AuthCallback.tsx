@@ -68,15 +68,15 @@ const AuthCallback = () => {
         console.error('Error checking profile:', profileError);
       }
 
-      // Determine profile completeness with tolerant rules
-      const isNonEmpty = (v: any) => typeof v === 'string' && v.trim().length > 0;
+      // Determine profile completeness with tolerant rules (handles NULL and empty strings)
+      const isNonEmpty = (v: any) => v != null && typeof v === 'string' && v.trim().length > 0;
       const essentialsComplete = !!profileData &&
                            isNonEmpty(profileData.first_name) &&
                            isNonEmpty(profileData.last_name) &&
                            isNonEmpty(profileData.phone) &&
                            isNonEmpty(profileData.address);
       const validNumChildren = typeof profileData?.num_children === 'number' && profileData.num_children >= 0;
-      const childrenInfoOk = profileData?.num_children === 0 ? true : isNonEmpty(profileData?.children_ages);
+      const childrenInfoOk = !profileData?.num_children || profileData.num_children === 0 || isNonEmpty(profileData?.children_ages);
       const isComplete = essentialsComplete && validNumChildren && childrenInfoOk;
 
       if (!isComplete) {
