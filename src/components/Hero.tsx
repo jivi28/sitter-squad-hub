@@ -32,14 +32,22 @@ const Hero = () => {
         if (error) throw error;
 
         if (data) {
-          const isNonEmpty = (v: any) => typeof v === 'string' && v.trim().length > 0;
+          const isNonEmpty = (v: any) => v != null && typeof v === 'string' && v.trim().length > 0;
           const essentialsComplete = isNonEmpty(data.first_name) &&
             isNonEmpty(data.last_name) &&
             isNonEmpty(data.phone) &&
             isNonEmpty(data.address);
-          const validNumChildren = typeof data.num_children === 'number' && data.num_children >= 0;
-          const childrenInfoOk = data.num_children === 0 ? true : isNonEmpty(data.children_ages);
-          const isComplete = essentialsComplete && validNumChildren && childrenInfoOk;
+          
+          // Must have at least children OR pets
+          const hasChildren = typeof data.num_children === 'number' && data.num_children > 0;
+          const hasPets = typeof data.num_pets === 'number' && data.num_pets > 0;
+          const hasChildrenOrPets = hasChildren || hasPets;
+          
+          // If has children, must have ages. If has pets, must have details.
+          const childrenInfoOk = !hasChildren || isNonEmpty(data.children_ages);
+          const petsInfoOk = !hasPets || isNonEmpty(data.pet_details);
+          
+          const isComplete = essentialsComplete && hasChildrenOrPets && childrenInfoOk && petsInfoOk;
           setHasCompleteProfile(isComplete);
         }
       } catch (error) {

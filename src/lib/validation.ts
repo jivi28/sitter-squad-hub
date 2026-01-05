@@ -36,15 +36,15 @@ export const bookingRequestSchema = z.object({
   { message: "End time must be after start time", path: ["end_time"] }
 );
 
-// Parent signup validation schema
+// Parent signup validation schema - requires children OR pets (or both)
 export const parentSignupSchema = z.object({
   firstName: sanitizedString(1, 50, "First name is required"),
   lastName: sanitizedString(1, 50, "Last name is required"),
   phone: z.string().min(10, "Valid phone number required").max(20),
   address: sanitizedString(5, 200, "Address is required"),
-  num_children: z.number().int().min(1).max(10),
-  children_ages: sanitizedString(1, 100, "Children ages required"),
-  num_pets: z.number().int().min(0).max(10).optional(),
+  num_children: z.number().int().min(0).max(10),
+  children_ages: z.string().max(100).transform(sanitizeText).optional(),
+  num_pets: z.number().int().min(0).max(10),
   pet_details: z.string().max(500).transform(sanitizeText).optional(),
   emergency_contact: z.string().max(100).transform(sanitizeText).optional(),
   special_needs: z.string().max(500).transform(sanitizeText).optional(),
@@ -54,7 +54,16 @@ export const parentSignupSchema = z.object({
   agreeBackground: z.boolean().refine(val => val === true, {
     message: "You must agree to the background check"
   })
-});
+}).refine(
+  (data) => (data.num_children > 0) || (data.num_pets > 0),
+  { message: "You must have at least 1 child or 1 pet", path: ["num_children"] }
+).refine(
+  (data) => data.num_children === 0 || (data.children_ages && data.children_ages.trim().length > 0),
+  { message: "Please provide children's ages", path: ["children_ages"] }
+).refine(
+  (data) => data.num_pets === 0 || (data.pet_details && data.pet_details.trim().length > 0),
+  { message: "Please provide pet details", path: ["pet_details"] }
+);
 
 // Sitter signup validation schema
 export const sitterSignupSchema = z.object({

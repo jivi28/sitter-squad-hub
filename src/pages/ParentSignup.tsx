@@ -60,15 +60,23 @@ const ParentSignup = () => {
         if (data) {
           setHasProfile(true);
           
-          // Check if profile is complete (all required fields filled)
-           const isNonEmpty = (v: any) => typeof v === 'string' && v.trim().length > 0;
+          // Check if profile is complete (all required fields filled + children OR pets)
+           const isNonEmpty = (v: any) => v != null && typeof v === 'string' && v.trim().length > 0;
            const essentialsComplete = isNonEmpty(data.first_name) && 
                             isNonEmpty(data.last_name) && 
                             isNonEmpty(data.phone) && 
                             isNonEmpty(data.address);
-           const validNumChildren = typeof data.num_children === 'number' && data.num_children >= 0;
-           const childrenInfoOk = data.num_children === 0 ? true : isNonEmpty(data.children_ages);
-           const isComplete = essentialsComplete && validNumChildren && childrenInfoOk;
+           
+           // Must have at least children OR pets
+           const hasChildren = typeof data.num_children === 'number' && data.num_children > 0;
+           const hasPets = typeof data.num_pets === 'number' && data.num_pets > 0;
+           const hasChildrenOrPets = hasChildren || hasPets;
+           
+           // If has children, must have ages. If has pets, must have details.
+           const childrenInfoOk = !hasChildren || isNonEmpty(data.children_ages);
+           const petsInfoOk = !hasPets || isNonEmpty(data.pet_details);
+           
+           const isComplete = essentialsComplete && hasChildrenOrPets && childrenInfoOk && petsInfoOk;
 
           // Check if user is explicitly accessing profile page (via "My Profile" button)
           const urlParams = new URLSearchParams(window.location.search);
@@ -122,6 +130,25 @@ const ParentSignup = () => {
 
     if (!formData.agreeTerms || !formData.agreeBackground) {
       setError("Please agree to the terms and background verification");
+      return;
+    }
+
+    // Validate children OR pets requirement
+    const numChildren = formData.numChildren ? parseInt(formData.numChildren) : 0;
+    const numPets = formData.numPets ? parseInt(formData.numPets) : 0;
+    
+    if (numChildren === 0 && numPets === 0) {
+      setError("You must have at least 1 child or 1 pet");
+      return;
+    }
+
+    if (numChildren > 0 && !formData.childrenAges.trim()) {
+      setError("Please provide your children's ages");
+      return;
+    }
+
+    if (numPets > 0 && !formData.petDetails.trim()) {
+      setError("Please provide pet details");
       return;
     }
 
@@ -290,58 +317,71 @@ const ParentSignup = () => {
                         />
                       </div>
 
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="numChildren">Number of Children *</Label>
-                          <Input
-                            id="numChildren"
-                            name="numChildren"
-                            type="number"
-                            inputMode="numeric"
-                            min="1"
-                            max="5"
-                            value={formData.numChildren}
-                            onChange={handleInputChange}
-                            required
-                          />
+                      <div className="border-t pt-6 mt-2">
+                        <div className="mb-4">
+                          <p className="text-sm text-muted-foreground">
+                            Please provide information for at least <strong>children</strong> or <strong>pets</strong> (or both)
+                          </p>
                         </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="childrenAges">Children's Ages *</Label>
-                          <Input
-                            id="childrenAges"
-                            name="childrenAges"
-                            value={formData.childrenAges}
-                            onChange={handleInputChange}
-                            placeholder="e.g., 3, 7, 12"
-                            required
-                          />
+                        
+                        <div className="grid md:grid-cols-2 gap-4 mb-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="numChildren">Number of Children</Label>
+                            <Input
+                              id="numChildren"
+                              name="numChildren"
+                              type="number"
+                              inputMode="numeric"
+                              min="0"
+                              max="10"
+                              value={formData.numChildren}
+                              onChange={handleInputChange}
+                              placeholder="0"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="childrenAges">
+                              Children's Ages {formData.numChildren && parseInt(formData.numChildren) > 0 && <span className="text-destructive">*</span>}
+                            </Label>
+                            <Input
+                              id="childrenAges"
+                              name="childrenAges"
+                              value={formData.childrenAges}
+                              onChange={handleInputChange}
+                              placeholder="e.g., 3, 7, 12"
+                              required={!!formData.numChildren && parseInt(formData.numChildren) > 0}
+                            />
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="grid md:grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="numPets">Number of Pets (Optional)</Label>
-                          <Input
-                            id="numPets"
-                            name="numPets"
-                            type="number"
-                            inputMode="numeric"
-                            min="0"
-                            max="5"
-                            value={formData.numPets}
-                            onChange={handleInputChange}
-                            placeholder="0"
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="petDetails">Pet Details (Optional)</Label>
-                          <Input
-                            id="petDetails"
-                            name="petDetails"
-                            value={formData.petDetails}
-                            onChange={handleInputChange}
-                            placeholder="e.g., Dog (Max), Cat (Luna)"
-                          />
+                        <div className="grid md:grid-cols-2 gap-4">
+                          <div className="space-y-2">
+                            <Label htmlFor="numPets">Number of Pets</Label>
+                            <Input
+                              id="numPets"
+                              name="numPets"
+                              type="number"
+                              inputMode="numeric"
+                              min="0"
+                              max="10"
+                              value={formData.numPets}
+                              onChange={handleInputChange}
+                              placeholder="0"
+                            />
+                          </div>
+                          <div className="space-y-2">
+                            <Label htmlFor="petDetails">
+                              Pet Details {formData.numPets && parseInt(formData.numPets) > 0 && <span className="text-destructive">*</span>}
+                            </Label>
+                            <Input
+                              id="petDetails"
+                              name="petDetails"
+                              value={formData.petDetails}
+                              onChange={handleInputChange}
+                              placeholder="e.g., Dog (Max), Cat (Luna)"
+                              required={!!formData.numPets && parseInt(formData.numPets) > 0}
+                            />
+                          </div>
                         </div>
                       </div>
 
