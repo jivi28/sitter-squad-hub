@@ -37,11 +37,16 @@ export const useBookingUpdates = ({ userId, userRole }: UseBookingUpdatesProps) 
   const { toast } = useToast();
 
   const fetchBookings = async () => {
+    if (!userId) {
+      setLoading(false);
+      return;
+    }
+    
     try {
       setLoading(true);
 
       if (userRole === 'parent') {
-        // Fetch parent bookings with response counts and sitter info
+        // Fetch parent bookings with sitter info
         const { data, error } = await supabase
           .from('bookings')
           .select(`
@@ -56,23 +61,33 @@ export const useBookingUpdates = ({ userId, userRole }: UseBookingUpdatesProps) 
 
         if (error) throw error;
 
-        const bookingsWithCounts = await Promise.all(
-          (data || []).map(async (booking: any) => {
-            const { count } = await supabase
-              .from('booking_responses')
-              .select('*', { count: 'exact', head: true })
-              .eq('booking_id', booking.id)
-              .eq('response', 'accepted');
+        const bookingIds = (data || []).map(b => b.id);
+        
+        // Fetch all response counts in ONE query (fixes N+1)
+        let countMap: Record<string, number> = {};
+        if (bookingIds.length > 0) {
+          const { data: responseCounts, error: countError } = await supabase
+            .from('booking_responses')
+            .select('booking_id')
+            .eq('response', 'accepted')
+            .in('booking_id', bookingIds);
 
-            return {
-              ...booking,
-              sitters: Array.isArray(booking.sitters) && booking.sitters.length > 0 
-                ? booking.sitters[0] 
-                : undefined,
-              response_count: count || 0,
-            };
-          })
-        );
+          if (!countError && responseCounts) {
+            countMap = responseCounts.reduce((acc, r) => {
+              acc[r.booking_id] = (acc[r.booking_id] || 0) + 1;
+              return acc;
+            }, {} as Record<string, number>);
+          }
+        }
+
+        // Map counts to bookings
+        const bookingsWithCounts = (data || []).map((booking: any) => ({
+          ...booking,
+          sitters: Array.isArray(booking.sitters) && booking.sitters.length > 0 
+            ? booking.sitters[0] 
+            : undefined,
+          response_count: countMap[booking.id] || 0,
+        }));
 
         setBookings(bookingsWithCounts as any);
       } else if (userRole === 'sitter') {

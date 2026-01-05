@@ -69,15 +69,24 @@ const AuthCallback = () => {
       }
 
       // Determine profile completeness with tolerant rules (handles NULL and empty strings)
+      // Requires: essentials + (children OR pets) with their details
       const isNonEmpty = (v: any) => v != null && typeof v === 'string' && v.trim().length > 0;
       const essentialsComplete = !!profileData &&
                            isNonEmpty(profileData.first_name) &&
                            isNonEmpty(profileData.last_name) &&
                            isNonEmpty(profileData.phone) &&
                            isNonEmpty(profileData.address);
-      const validNumChildren = typeof profileData?.num_children === 'number' && profileData.num_children >= 0;
-      const childrenInfoOk = !profileData?.num_children || profileData.num_children === 0 || isNonEmpty(profileData?.children_ages);
-      const isComplete = essentialsComplete && validNumChildren && childrenInfoOk;
+      
+      // Must have at least children OR pets
+      const hasChildren = typeof profileData?.num_children === 'number' && profileData.num_children > 0;
+      const hasPets = typeof profileData?.num_pets === 'number' && profileData.num_pets > 0;
+      const hasChildrenOrPets = hasChildren || hasPets;
+      
+      // If has children, must have ages. If has pets, must have details.
+      const childrenInfoOk = !hasChildren || isNonEmpty(profileData?.children_ages);
+      const petsInfoOk = !hasPets || isNonEmpty(profileData?.pet_details);
+      
+      const isComplete = essentialsComplete && hasChildrenOrPets && childrenInfoOk && petsInfoOk;
 
       if (!isComplete) {
         // Profile incomplete, go to signup
