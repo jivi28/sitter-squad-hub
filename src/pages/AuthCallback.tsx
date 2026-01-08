@@ -29,10 +29,28 @@ const AuthCallback = () => {
       }
 
       const userId = session.user.id;
-      const role = searchParams.get('role') || localStorage.getItem('pending_role') || 'parent';
       
-      // Store role in localStorage
+      // Check actual roles from database first
+      const { data: dbRoles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', userId);
+
+      const roleSet = new Set(dbRoles?.map(r => r.role) || []);
+      
+      // Determine role: database > query param > localStorage > default
+      let role: string;
+      if (roleSet.has('sitter')) {
+        role = 'sitter';
+      } else if (roleSet.has('parent')) {
+        role = 'parent';
+      } else {
+        role = searchParams.get('role') || localStorage.getItem('pending_role') || 'parent';
+      }
+      
+      // Sync localStorage with determined role
       localStorage.setItem('user_role', role);
+      localStorage.removeItem('pending_role');
 
       if (role === 'sitter') {
         // Check if sitter profile exists and is complete

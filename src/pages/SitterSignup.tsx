@@ -50,8 +50,8 @@ const SitterSignup = () => {
     if (authLoading) return;
     
     if (!user) {
-      
-      window.location.href = '/sitter-auth';
+      // Direct redirect to auth page with sitter role - skip intermediate redirect
+      window.location.href = '/auth?role=sitter';
       return;
     }
     

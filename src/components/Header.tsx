@@ -18,31 +18,45 @@ const Header = () => {
 
     const checkUserType = async () => {
       try {
-        // Check if user has sitter profile
-        const { data: sitterData } = await supabase
-          .from('sitters')
-          .select('id')
-          .eq('user_id', user.id)
-          .maybeSingle();
+        // First priority: Check actual roles from user_roles table (source of truth)
+        const { data: roles } = await supabase
+          .from('user_roles')
+          .select('role')
+          .eq('user_id', user.id);
 
-        if (sitterData) {
+        const roleSet = new Set(roles?.map(r => r.role) || []);
+        
+        // If user has explicit sitter role, use it
+        if (roleSet.has('sitter')) {
           setUserType('sitter');
           return;
         }
-
-        // Check if user has parent profile  
-        const { data: parentData } = await supabase
-          .from('profiles')
-          .select('id')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (parentData) {
+        // If user has explicit parent role, use it
+        if (roleSet.has('parent')) {
           setUserType('parent');
           return;
         }
 
-        // Default to parent if no profile found
+        // Second priority: Check localStorage for signup intent
+        const storedRole = localStorage.getItem('user_role');
+        if (storedRole === 'sitter' || storedRole === 'parent') {
+          setUserType(storedRole);
+          return;
+        }
+
+        // Third priority: Check which profile exists and is complete
+        const { data: sitterData } = await supabase
+          .from('sitters')
+          .select('id, approved_at')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (sitterData?.approved_at) {
+          setUserType('sitter');
+          return;
+        }
+
+        // Default to parent
         setUserType('parent');
       } catch (error) {
         console.error('Error checking user type:', error);
