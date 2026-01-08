@@ -56,6 +56,7 @@ interface RebookData {
 const ParentBookingHistory = () => {
   const { user } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   
   // Use real-time booking updates hook
   const { bookings: realtimeBookings, loading, refetch: fetchBookings } = useBookingUpdates({
@@ -326,7 +327,6 @@ const ParentBookingHistory = () => {
     );
   }
 
-  const navigate = useNavigate();
 
   if (bookings.length === 0) {
     return (
