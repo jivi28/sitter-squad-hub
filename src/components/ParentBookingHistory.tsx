@@ -58,13 +58,12 @@ const ParentBookingHistory = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   
-  // Use real-time booking updates hook
-  const { bookings: realtimeBookings, loading, refetch: fetchBookings } = useBookingUpdates({
+  // Use real-time booking updates hook - use bookings directly, no local state needed
+  const { bookings, loading, refetch: fetchBookings } = useBookingUpdates({
     userId: user?.id || '',
     userRole: 'parent'
   });
   
-  const [bookings, setBookings] = useState<Booking[]>(realtimeBookings);
   const [rebookData, setRebookData] = useState<RebookData>({
     booking_date: "",
     start_time: "",
@@ -74,11 +73,6 @@ const ParentBookingHistory = () => {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [rebooking, setRebooking] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState<string | null>(null);
-
-  // Sync real-time bookings to local state
-  useEffect(() => {
-    setBookings(realtimeBookings);
-  }, [realtimeBookings]);
 
   // Extension handling
   const handleExtendRequest = async (bookingId: string, currentExtensionCount: number) => {
