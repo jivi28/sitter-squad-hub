@@ -439,8 +439,16 @@ const ParentBookingHistory = () => {
                 />
               )}
 
-              {booking.status === "received_responses" && booking.response_count && booking.response_count > 0 && (
+              {/* Show applications when there are responses (pending or received_responses status) */}
+              {(booking.status === "pending" || booking.status === "received_responses") && 
+               booking.response_count && booking.response_count > 0 && (
                 <div className="mt-4">
+                  <Alert className="mb-4 border-primary bg-primary/10">
+                    <User className="h-4 w-4 text-primary" />
+                    <AlertDescription className="text-primary font-medium">
+                      Great news! {booking.response_count} sitter(s) have applied to your request. Review and select below!
+                    </AlertDescription>
+                  </Alert>
                   <CollapsibleApplications
                     bookingId={booking.id}
                     responseCount={booking.response_count}
