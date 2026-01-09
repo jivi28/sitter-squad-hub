@@ -138,12 +138,18 @@ serve(async (req) => {
       throw responseError;
     }
 
-    // Update booking status to show it has responses if this is the first response
-    if (isFirstResponse && response === 'accepted') {
-      await supabaseClient
+    // Update booking status to show it has responses (always update when accepting if still pending)
+    if (response === 'accepted' && booking.status === 'pending') {
+      const { error: updateError } = await supabaseClient
         .from('bookings')
         .update({ status: 'received_responses' })
         .eq('id', booking_id);
+      
+      if (updateError) {
+        console.error('Error updating booking status:', updateError);
+      } else {
+        console.log(`Booking ${booking_id} status updated to received_responses`);
+      }
     }
 
     if (response === 'accepted') {

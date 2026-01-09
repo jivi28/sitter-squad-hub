@@ -161,7 +161,7 @@ export const useBookingUpdates = ({ userId, userRole }: UseBookingUpdatesProps) 
           table: 'booking_responses',
         },
         async (payload) => {
-          
+          console.log('New booking response received:', payload);
           
           if (userRole === 'parent') {
             // Check if this response is for the parent's booking
@@ -174,9 +174,10 @@ export const useBookingUpdates = ({ userId, userRole }: UseBookingUpdatesProps) 
             if (booking?.user_id === userId) {
               toast({
                 title: 'New Sitter Application!',
-                description: 'A sitter has applied for one of your booking requests.',
+                description: 'A sitter has applied for one of your booking requests. Check your bookings!',
               });
-              fetchBookings();
+              // Force immediate refresh to show new applications
+              await fetchBookings();
             }
           }
         }
