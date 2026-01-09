@@ -46,23 +46,17 @@ export const useBookingUpdates = ({ userId, userRole }: UseBookingUpdatesProps) 
       setLoading(true);
 
       if (userRole === 'parent') {
-        // Fetch parent bookings with sitter info
+        // Fetch parent bookings (no embedded sitters because bookings.sitter_id has no FK)
         const { data, error } = await supabase
           .from('bookings')
-          .select(`
-            *,
-            sitters (
-              first_name,
-              last_name
-            )
-          `)
+          .select('*')
           .eq('user_id', userId)
           .order('created_at', { ascending: false });
 
         if (error) throw error;
 
-        const bookingIds = (data || []).map(b => b.id);
-        
+        const bookingIds = (data || []).map((b) => b.id);
+
         // Fetch all response counts in ONE query (fixes N+1)
         let countMap: Record<string, number> = {};
         if (bookingIds.length > 0) {
@@ -80,12 +74,29 @@ export const useBookingUpdates = ({ userId, userRole }: UseBookingUpdatesProps) 
           }
         }
 
-        // Map counts to bookings
+        // Fetch sitter names for bookings that already have sitter_id (confirmed bookings)
+        const sitterIds = Array.from(
+          new Set((data || []).map((b) => b.sitter_id).filter(Boolean))
+        ) as string[];
+
+        const sitterMap: Record<string, { first_name: string; last_name: string }> = {};
+        if (sitterIds.length > 0) {
+          const { data: sittersData, error: sittersError } = await supabase
+            .from('sitters')
+            .select('id, first_name, last_name')
+            .in('id', sitterIds);
+
+          // If RLS blocks this, we still want bookings to render.
+          if (!sittersError && sittersData) {
+            for (const s of sittersData) {
+              sitterMap[s.id] = { first_name: s.first_name, last_name: s.last_name };
+            }
+          }
+        }
+
         const bookingsWithCounts = (data || []).map((booking: any) => ({
           ...booking,
-          sitters: Array.isArray(booking.sitters) && booking.sitters.length > 0 
-            ? booking.sitters[0] 
-            : undefined,
+          sitters: booking.sitter_id ? sitterMap[booking.sitter_id] : undefined,
           response_count: countMap[booking.id] || 0,
         }));
 
@@ -94,7 +105,7 @@ export const useBookingUpdates = ({ userId, userRole }: UseBookingUpdatesProps) 
         // Fetch sitter's bookings using sitter_id
         const { data: sitterData } = await supabase
           .from('sitters')
-          .select('id, first_name, last_name')
+          .select('id')
           .eq('user_id', userId)
           .single();
 
@@ -102,26 +113,13 @@ export const useBookingUpdates = ({ userId, userRole }: UseBookingUpdatesProps) 
 
         const { data, error } = await supabase
           .from('bookings')
-          .select(`
-            *,
-            sitters (
-              first_name,
-              last_name
-            )
-          `)
+          .select('*')
           .eq('sitter_id', sitterData.id)
           .order('booking_date', { ascending: true });
 
         if (error) throw error;
-        
-        const mappedBookings = (data || []).map((booking: any) => ({
-          ...booking,
-          sitters: Array.isArray(booking.sitters) && booking.sitters.length > 0 
-            ? booking.sitters[0] 
-            : undefined
-        }));
-        
-        setBookings(mappedBookings as any);
+
+        setBookings((data || []) as any);
       }
     } catch (error) {
       console.error('Error fetching bookings:', error);
