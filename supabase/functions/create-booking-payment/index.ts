@@ -51,21 +51,16 @@ serve(async (req) => {
 
     console.log(`Processing payment for booking: ${booking_id} by user: ${user.id} (${user.email})`);
 
-    // Fetch booking details with sitter information
+    // Fetch booking details (no join - sitter_id has no FK)
     const { data: booking, error: bookingError } = await supabaseClient
       .from("bookings")
-      .select(`
-        *,
-        sitters!inner(
-          first_name,
-          last_name
-        )
-      `)
+      .select("*")
       .eq("id", booking_id)
       .eq("user_id", user.id)
       .single();
 
     if (bookingError || !booking) {
+      console.error("Booking fetch error:", bookingError);
       throw new Error("Booking not found or unauthorized");
     }
 
@@ -77,7 +72,21 @@ serve(async (req) => {
       throw new Error("This booking has already been paid");
     }
 
-    console.log(`Booking details: ${JSON.stringify(booking)}`);
+    // Fetch sitter name separately
+    let sitterName = "Babysitter";
+    if (booking.sitter_id) {
+      const { data: sitterData } = await supabaseClient
+        .from("sitters")
+        .select("first_name, last_name")
+        .eq("id", booking.sitter_id)
+        .single();
+      
+      if (sitterData) {
+        sitterName = `${sitterData.first_name} ${sitterData.last_name}`;
+      }
+    }
+
+    console.log(`Booking details: ${JSON.stringify(booking)}, Sitter: ${sitterName}`);
 
     // Initialize Stripe
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
@@ -104,8 +113,7 @@ serve(async (req) => {
 
     console.log(`Creating payment session for amount: $${booking.total_cost} (${amountInCents} cents)`);
 
-    // Get sitter name from joined data
-    const sitterName = `${booking.sitters.first_name} ${booking.sitters.last_name}`;
+    // sitterName already fetched above
 
     // Create Checkout Session
     const session = await stripe.checkout.sessions.create({
