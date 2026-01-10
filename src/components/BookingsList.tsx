@@ -2,10 +2,18 @@ import { useState, useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Calendar, Clock, Users, DollarSign, MapPin, Loader2, Languages } from "lucide-react";
+import { Calendar, Clock, Users, DollarSign, MapPin, Loader2, Languages, CheckCircle } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { EmptyState } from "./EmptyState";
+
+// Helper to check if booking session has ended
+const hasSessionEnded = (bookingDate: string, endTime: string): boolean => {
+  const [hours, minutes] = endTime.split(':').map(Number);
+  const sessionEnd = new Date(bookingDate);
+  sessionEnd.setHours(hours, minutes, 0, 0);
+  return new Date() > sessionEnd;
+};
 
 interface Booking {
   id: string;
@@ -16,6 +24,7 @@ interface Booking {
   total_cost: number;
   sitter_hourly_rate: number;
   status: string;
+  payment_status: string | null;
   special_notes: string | null;
   preferred_language: string | null;
   user_id: string;
@@ -339,23 +348,48 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
                         </div>
                       </div>
                       
-                      {booking.status === 'pending' && (
-                        <div className="flex space-x-2">
+                      <div className="flex space-x-2">
+                        {booking.status === 'pending' && (
+                          <>
+                            <Button
+                              size="sm"
+                              onClick={() => updateBookingStatus(booking.id, 'confirmed')}
+                            >
+                              Accept
+                            </Button>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              onClick={() => updateBookingStatus(booking.id, 'cancelled')}
+                            >
+                              Decline
+                            </Button>
+                          </>
+                        )}
+                        
+                        {/* Mark as Completed button - shows for confirmed+paid bookings after session ends */}
+                        {booking.status === 'confirmed' && 
+                         booking.payment_status === 'completed' && 
+                         hasSessionEnded(booking.booking_date, booking.end_time) && (
                           <Button
                             size="sm"
-                            onClick={() => updateBookingStatus(booking.id, 'confirmed')}
+                            variant="default"
+                            className="bg-green-600 hover:bg-green-700"
+                            onClick={() => updateBookingStatus(booking.id, 'completed')}
                           >
-                            Accept
+                            <CheckCircle className="h-4 w-4 mr-1" />
+                            Mark as Completed
                           </Button>
-                          <Button
-                            size="sm"
-                            variant="outline"
-                            onClick={() => updateBookingStatus(booking.id, 'cancelled')}
-                          >
-                            Decline
-                          </Button>
-                        </div>
-                      )}
+                        )}
+
+                        {/* Show waiting for payment message */}
+                        {booking.status === 'confirmed' && 
+                         booking.payment_status !== 'completed' && (
+                          <Badge variant="outline" className="text-amber-600 border-amber-300">
+                            Awaiting Payment
+                          </Badge>
+                        )}
+                      </div>
                     </div>
 
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
