@@ -106,36 +106,9 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
       setDebugInfo(`Sitter: ${sitterName}`);
 
       // Fetch bookings where this sitter is selected
-      // Phase 4: Fetch bookings with sitter info from sitters table
-      const { data, error } = await supabase
-        .from('bookings')
-        .select(`
-          *,
-          sitters (
-            first_name,
-            last_name
-          )
-        `)
-        .eq('sitter_id', sitterData.id)
-        .order('booking_date', { ascending: true });
-
-      if (error) {
-        console.error('BookingsList: Error fetching bookings:', error);
-        setDebugInfo(`Error fetching bookings: ${error.message}`);
-        return;
-      }
-
-      
-      
-      if (!data || data.length === 0) {
-        
-        setDebugInfo(`No bookings found for ${sitterName}`);
-        setBookings([]);
-        return;
-      }
-
-      // Now fetch with profiles
-      const { data: bookingsWithProfiles, error: profileError } = await supabase
+      // IMPORTANT: Do not embed sitters in the select because bookings.sitter_id has no FK
+      // which causes "Could not find a relationship" errors.
+      const { data: bookingsWithProfiles, error: bookingsError } = await supabase
         .from('bookings')
         .select(`
           *,
@@ -144,38 +117,53 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
             last_name,
             phone,
             address
-          ),
-          sitters (
-            first_name,
-            last_name
           )
         `)
         .eq('sitter_id', sitterData.id)
         .order('booking_date', { ascending: true }) as { data: any[] | null; error: any };
 
-      if (profileError) {
-        console.error('BookingsList: Error fetching bookings with profiles:', profileError);
-        // Fall back to basic bookings without profiles - map sitters array to object
-        const mappedData = (data || []).map((booking: any) => ({
+      if (bookingsError) {
+        console.error('BookingsList: Error fetching bookings:', bookingsError);
+
+        // Fallback: fetch bookings without profile join (still render bookings)
+        const { data: basicBookings, error: basicError } = await supabase
+          .from('bookings')
+          .select('*')
+          .eq('sitter_id', sitterData.id)
+          .order('booking_date', { ascending: true });
+
+        if (basicError) {
+          setDebugInfo(`Error fetching bookings: ${basicError.message}`);
+          return;
+        }
+
+        const mappedBasic = (basicBookings || []).map((booking: any) => ({
           ...booking,
-          sitters: Array.isArray(booking.sitters) && booking.sitters.length > 0 
-            ? booking.sitters[0] 
-            : undefined
+          profiles: undefined,
+          sitters: { first_name: sitterData.first_name, last_name: sitterData.last_name },
         }));
-        setBookings(mappedData as any);
-        setDebugInfo(`Found ${data?.length || 0} bookings (profile fetch failed)`);
-      } else {
-        
-        // Map the data to ensure sitters is properly typed
-        const mappedBookings = (bookingsWithProfiles || []).map((booking: any) => ({
-          ...booking,
-          sitters: Array.isArray(booking.sitters) && booking.sitters.length > 0 
-            ? booking.sitters[0] 
-            : undefined
-        }));
-        setBookings(mappedBookings as any);
-        setDebugInfo(`Found ${mappedBookings.length} bookings with profiles`);
+
+        setBookings(mappedBasic as any);
+        setDebugInfo(`Found ${mappedBasic.length} bookings (without profiles)`);
+        return;
       }
+
+      if (!bookingsWithProfiles || bookingsWithProfiles.length === 0) {
+        setDebugInfo(`No bookings found for ${sitterName}`);
+        setBookings([]);
+        return;
+      }
+
+      const mappedBookings = (bookingsWithProfiles || []).map((booking: any) => ({
+        ...booking,
+        // Ensure profiles is an object (not an array)
+        profiles: Array.isArray(booking.profiles) ? booking.profiles[0] : booking.profiles,
+        // Attach sitter name from sitter profile (no join)
+        sitters: { first_name: sitterData.first_name, last_name: sitterData.last_name },
+      }));
+
+      setBookings(mappedBookings as any);
+      setDebugInfo(`Found ${mappedBookings.length} bookings`);
     } catch (error) {
       console.error('BookingsList: Error in fetchBookings:', error);
       setDebugInfo(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
