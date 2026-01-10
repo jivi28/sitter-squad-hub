@@ -335,7 +335,7 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
                           </div>
                           <div className="flex items-center space-x-1">
                             <Clock className="h-4 w-4" />
-                            <span>{booking.start_time} - {booking.end_time}</span>
+                            <span>{booking.start_time.slice(0, 5)} - {booking.end_time.slice(0, 5)}</span>
                           </div>
                           <div className="flex items-center space-x-1">
                             <Users className="h-4 w-4" />
