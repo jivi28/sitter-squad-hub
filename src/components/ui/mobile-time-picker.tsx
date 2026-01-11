@@ -35,15 +35,18 @@ export const MobileTimePicker: React.FC<MobileTimePickerProps> = ({
   const periods = ['AM', 'PM'];
 
   const updateTime = (newHour: string, newMinute: string, newPeriod: string) => {
-    if (newHour && newMinute && newPeriod) {
-      // Convert 12-hour to 24-hour format
-      let hour24 = parseInt(newHour);
-      if (newPeriod === 'PM' && hour24 !== 12) hour24 += 12;
-      if (newPeriod === 'AM' && hour24 === 12) hour24 = 0;
-      
-      const hour24Str = hour24.toString().padStart(2, '0');
-      onChange(`${hour24Str}:${newMinute}`);
-    }
+    // Use defaults for any missing values so onChange fires on first selection
+    const finalHour = newHour || '12';
+    const finalMinute = newMinute || '00';
+    const finalPeriod = newPeriod || 'AM';
+    
+    // Convert 12-hour to 24-hour format
+    let hour24Value = parseInt(finalHour);
+    if (finalPeriod === 'PM' && hour24Value !== 12) hour24Value += 12;
+    if (finalPeriod === 'AM' && hour24Value === 12) hour24Value = 0;
+    
+    const hour24Str = hour24Value.toString().padStart(2, '0');
+    onChange(`${hour24Str}:${finalMinute}`);
   };
 
   const handleHourChange = (newHour: string) => {
