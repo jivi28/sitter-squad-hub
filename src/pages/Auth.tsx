@@ -154,7 +154,8 @@ const Auth = () => {
       const email = signupData.email;
       // Persist email for verify page
       try { localStorage.setItem('pending_signup_email', email); } catch {}
-      const redirectUrl = `${window.location.origin}/verify-email?type=parent&email=${encodeURIComponent(email)}`;
+      // Use role-specific redirect URL
+      const redirectUrl = `${window.location.origin}/verify-email?type=${selectedRole}&email=${encodeURIComponent(email)}`;
       
       const { data, error } = await supabase.auth.signUp({
         email,
@@ -169,10 +170,12 @@ const Auth = () => {
       if (data.user) {
         toast({
           title: "Account created!",
-          description: "Please check your email to verify your account before booking sitters. You can start browsing available sitters now!",
+          description: selectedRole === 'sitter' 
+            ? "Please check your email to verify your account before completing your sitter application."
+            : "Please check your email to verify your account before booking sitters. You can start browsing available sitters now!",
         });
-        // Redirect to email verification page
-        window.location.href = `/verify-email?type=parent&email=${encodeURIComponent(signupData.email)}`;
+        // Redirect to email verification page with correct role
+        window.location.href = `/verify-email?type=${selectedRole}&email=${encodeURIComponent(signupData.email)}`;
       }
     } catch (error: any) {
       console.error('Signup error:', error);

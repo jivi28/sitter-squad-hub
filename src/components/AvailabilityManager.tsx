@@ -225,14 +225,14 @@ const AvailabilityManager = ({ sitterId, currentAvailability, onAvailabilityUpda
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             <div className="space-y-2">
               <Label>Day of Week</Label>
               <Select 
                 value={newSlot.day} 
                 onValueChange={(value) => setNewSlot(prev => ({ ...prev, day: value }))}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-11">
                   <SelectValue placeholder="Select day" />
                 </SelectTrigger>
                 <SelectContent>
@@ -245,24 +245,23 @@ const AvailabilityManager = ({ sitterId, currentAvailability, onAvailabilityUpda
               </Select>
             </div>
             
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <ResponsiveTimeInput 
-                value={newSlot.startTime}
-                onChange={(value) => setNewSlot(prev => ({ ...prev, startTime: value }))}
-                label="Start Time"
-                required
-              />
-              <ResponsiveTimeInput 
-                value={newSlot.endTime}
-                onChange={(value) => setNewSlot(prev => ({ ...prev, endTime: value }))}
-                label="End Time"
-                required
-              />
-            </div>
+            <ResponsiveTimeInput 
+              value={newSlot.startTime}
+              onChange={(value) => setNewSlot(prev => ({ ...prev, startTime: value }))}
+              label="Start Time"
+              required
+            />
+            
+            <ResponsiveTimeInput 
+              value={newSlot.endTime}
+              onChange={(value) => setNewSlot(prev => ({ ...prev, endTime: value }))}
+              label="End Time"
+              required
+            />
             
             <div className="space-y-2">
-              <Label className="invisible">Add</Label>
-              <Button onClick={addTimeSlot} className="w-full">
+              <Label className="invisible hidden sm:block">Add</Label>
+              <Button onClick={addTimeSlot} className="w-full h-11 mt-auto">
                 <Plus className="h-4 w-4 mr-2" />
                 Add Slot
               </Button>
