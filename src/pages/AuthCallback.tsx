@@ -41,18 +41,31 @@ const AuthCallback = () => {
       // Get the pending role from OAuth flow (stored before redirect)
       const pendingRole = searchParams.get('role') || localStorage.getItem('pending_role');
       
-      // Determine role: 
-      // 1. If user has existing roles in DB, use those
-      // 2. Otherwise, use the pending role from OAuth/signup flow
-      // 3. Default to 'parent' only as last resort
+      // Determine role:
+      // - If user already has BOTH roles, respect the user's explicit choice from the OAuth flow when present.
+      // - If user is already a sitter, always keep sitter (sitter experience should not be blocked by parent role).
+      // - If user selected "sitter" during this OAuth attempt, route them to sitter onboarding even if a parent role exists.
+      // - Otherwise fall back to existing DB roles.
       let role: string;
-      if (roleSet.has('sitter')) {
+
+      const pendingIsValid = pendingRole === 'sitter' || pendingRole === 'parent';
+
+      if (roleSet.has('sitter') && roleSet.has('parent')) {
+        // Dual-role user: honor explicit choice if provided.
+        role = pendingIsValid
+          ? pendingRole
+          : (localStorage.getItem('user_role') === 'sitter' || localStorage.getItem('user_role') === 'parent')
+            ? (localStorage.getItem('user_role') as string)
+            : 'parent';
+      } else if (roleSet.has('sitter')) {
+        role = 'sitter';
+      } else if (pendingRole === 'sitter') {
+        // Important: a new sitter applicant may already have a 'parent' role due to profile triggers.
         role = 'sitter';
       } else if (roleSet.has('parent')) {
         role = 'parent';
-      } else if (pendingRole === 'sitter' || pendingRole === 'parent') {
-        // New user from OAuth - use their selected role
-        role = pendingRole;
+      } else if (pendingRole === 'parent') {
+        role = 'parent';
       } else {
         role = 'parent';
       }
