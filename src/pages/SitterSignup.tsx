@@ -559,8 +559,17 @@ const SitterSignup = () => {
                         type="submit" 
                         variant="book" 
                         size="lg" 
-                        className="w-full"
+                        className="w-full min-h-[56px] text-lg touch-manipulation"
                         disabled={!formData.agreeTerms || !formData.agreeBackground || !formData.over16 || isLoading}
+                        onClick={(e) => {
+                          // Ensure form submission on mobile
+                          if (!isLoading && formData.agreeTerms && formData.agreeBackground && formData.over16) {
+                            const form = e.currentTarget.closest('form');
+                            if (form) {
+                              form.requestSubmit();
+                            }
+                          }
+                        }}
                       >
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                         {isEditMode ? "Update profile" : "Submit Application"}
