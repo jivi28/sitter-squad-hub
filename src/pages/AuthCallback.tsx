@@ -38,15 +38,26 @@ const AuthCallback = () => {
 
       const roleSet = new Set(dbRoles?.map(r => r.role) || []);
       
-      // Determine role: database > query param > localStorage > default
+      // Get the pending role from OAuth flow (stored before redirect)
+      const pendingRole = searchParams.get('role') || localStorage.getItem('pending_role');
+      
+      // Determine role: 
+      // 1. If user has existing roles in DB, use those
+      // 2. Otherwise, use the pending role from OAuth/signup flow
+      // 3. Default to 'parent' only as last resort
       let role: string;
       if (roleSet.has('sitter')) {
         role = 'sitter';
       } else if (roleSet.has('parent')) {
         role = 'parent';
+      } else if (pendingRole === 'sitter' || pendingRole === 'parent') {
+        // New user from OAuth - use their selected role
+        role = pendingRole;
       } else {
-        role = searchParams.get('role') || localStorage.getItem('pending_role') || 'parent';
+        role = 'parent';
       }
+      
+      console.log('AuthCallback - determined role:', role, 'pendingRole:', pendingRole, 'dbRoles:', Array.from(roleSet));
       
       // Sync localStorage with determined role
       localStorage.setItem('user_role', role);
