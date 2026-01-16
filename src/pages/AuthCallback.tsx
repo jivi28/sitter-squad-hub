@@ -39,37 +39,52 @@ const AuthCallback = () => {
       const roleSet = new Set(dbRoles?.map(r => r.role) || []);
       
       // Get the pending role from OAuth flow (stored before redirect)
+      // This is CRITICAL: The pending_role represents the user's EXPLICIT choice during signup
       const pendingRole = searchParams.get('role') || localStorage.getItem('pending_role');
+      const pendingIsValid = pendingRole === 'sitter' || pendingRole === 'parent';
       
-      // Determine role:
-      // - If user already has BOTH roles, respect the user's explicit choice from the OAuth flow when present.
-      // - If user is already a sitter, always keep sitter (sitter experience should not be blocked by parent role).
-      // - If user selected "sitter" during this OAuth attempt, route them to sitter onboarding even if a parent role exists.
-      // - Otherwise fall back to existing DB roles.
+      // Check if user has a completed sitter profile (not just the role)
+      const { data: existingSitter } = await supabase
+        .from('sitters')
+        .select('id, approved_at')
+        .eq('user_id', userId)
+        .maybeSingle();
+      
+      const hasCompletedSitterProfile = !!existingSitter;
+      const isApprovedSitter = !!existingSitter?.approved_at;
+      
+      // Determine role with this priority:
+      // 1. If pending_role is 'sitter' -> ALWAYS route to sitter flow (user explicitly chose sitter)
+      //    (A parent role may exist due to auto-profile-creation trigger, ignore it for new sitter signups)
+      // 2. If user has a completed sitter profile in DB -> they're a sitter
+      // 3. If pending_role is 'parent' -> route to parent flow
+      // 4. Check DB roles as fallback
+      // 5. Default to parent
       let role: string;
 
-      const pendingIsValid = pendingRole === 'sitter' || pendingRole === 'parent';
-
-      if (roleSet.has('sitter') && roleSet.has('parent')) {
-        // Dual-role user: honor explicit choice if provided.
-        role = pendingIsValid
-          ? pendingRole
-          : (localStorage.getItem('user_role') === 'sitter' || localStorage.getItem('user_role') === 'parent')
-            ? (localStorage.getItem('user_role') as string)
-            : 'parent';
-      } else if (roleSet.has('sitter')) {
+      if (pendingRole === 'sitter') {
+        // User explicitly selected "Become a Sitter" - this takes priority over any auto-assigned parent role
         role = 'sitter';
-      } else if (pendingRole === 'sitter') {
-        // Important: a new sitter applicant may already have a 'parent' role due to profile triggers.
+        console.log('AuthCallback: Using pending sitter role (user explicit choice)');
+      } else if (hasCompletedSitterProfile) {
+        // User has a sitter profile in DB - they're a sitter
+        role = 'sitter';
+        console.log('AuthCallback: User has existing sitter profile');
+      } else if (pendingRole === 'parent') {
+        // User explicitly selected "Book a Sitter"
+        role = 'parent';
+        console.log('AuthCallback: Using pending parent role (user explicit choice)');
+      } else if (roleSet.has('sitter')) {
+        // DB says sitter (shouldn't happen without sitter profile, but handle it)
         role = 'sitter';
       } else if (roleSet.has('parent')) {
-        role = 'parent';
-      } else if (pendingRole === 'parent') {
+        // DB says parent and no pending role - existing parent user
         role = 'parent';
       } else {
+        // No role info at all - default to parent
         role = 'parent';
       }
-      
+
       console.log('AuthCallback - determined role:', role, 'pendingRole:', pendingRole, 'dbRoles:', Array.from(roleSet));
       
       // Sync localStorage with determined role
@@ -77,24 +92,16 @@ const AuthCallback = () => {
       localStorage.removeItem('pending_role');
 
       if (role === 'sitter') {
-        // Check if sitter profile exists and is complete
-        const { data: sitterData, error: sitterError } = await supabase
-          .from('sitters')
-          .select('id, status, approved_at')
-          .eq('user_id', userId)
-          .maybeSingle();
-
-        if (sitterError) {
-          console.error('Error checking sitter profile:', sitterError);
-        }
-
+        // We already checked for sitter profile above, reuse that data
         // If no profile or not approved, go to signup
-        if (!sitterData || !sitterData.approved_at) {
+        if (!isApprovedSitter) {
+          console.log('AuthCallback: Sitter not approved, redirecting to signup');
           navigate('/sitter-signup');
           return;
         }
 
-        // Has complete profile, go to dashboard
+        // Has approved profile, go to dashboard
+        console.log('AuthCallback: Approved sitter, redirecting to dashboard');
         navigate('/sitter-dashboard');
         return;
       }
