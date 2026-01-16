@@ -240,30 +240,32 @@ const Auth = () => {
               </p>
             </div>
 
-            {/* Role Selection */}
-            <div className="mb-6 grid grid-cols-2 gap-4">
+            {/* Role Selection - Mobile optimized with larger touch targets */}
+            <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4">
               <button
+                type="button"
                 onClick={() => setSelectedRole('parent')}
-                className={`p-4 rounded-lg border-2 transition-all ${
+                className={`p-4 sm:p-4 rounded-lg border-2 transition-all touch-manipulation active:scale-[0.98] ${
                   selectedRole === 'parent'
-                    ? 'border-primary bg-primary/5'
+                    ? 'border-primary bg-primary/5 shadow-sm'
                     : 'border-border bg-card hover:border-primary/50'
                 }`}
               >
-                <Baby className={`h-8 w-8 mx-auto mb-2 ${selectedRole === 'parent' ? 'text-primary' : 'text-muted-foreground'}`} />
+                <Baby className={`h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2 ${selectedRole === 'parent' ? 'text-primary' : 'text-muted-foreground'}`} />
                 <div className="text-sm font-medium">Book a Sitter</div>
                 <div className="text-xs text-muted-foreground">I need childcare</div>
               </button>
               
               <button
+                type="button"
                 onClick={() => setSelectedRole('sitter')}
-                className={`p-4 rounded-lg border-2 transition-all ${
+                className={`p-4 sm:p-4 rounded-lg border-2 transition-all touch-manipulation active:scale-[0.98] ${
                   selectedRole === 'sitter'
-                    ? 'border-primary bg-primary/5'
+                    ? 'border-primary bg-primary/5 shadow-sm'
                     : 'border-border bg-card hover:border-primary/50'
                 }`}
               >
-                <Briefcase className={`h-8 w-8 mx-auto mb-2 ${selectedRole === 'sitter' ? 'text-primary' : 'text-muted-foreground'}`} />
+                <Briefcase className={`h-6 w-6 sm:h-8 sm:w-8 mx-auto mb-2 ${selectedRole === 'sitter' ? 'text-primary' : 'text-muted-foreground'}`} />
                 <div className="text-sm font-medium">Become a Sitter</div>
                 <div className="text-xs text-muted-foreground">I want to earn</div>
               </button>
@@ -310,7 +312,7 @@ const Auth = () => {
                       </div>
                       <Button 
                         type="submit" 
-                        className="w-full" 
+                        className="w-full min-h-[48px] touch-manipulation" 
                         disabled={isLoading}
                       >
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -331,7 +333,7 @@ const Auth = () => {
                       <Button
                         type="button"
                         variant="outline"
-                        className="w-full"
+                        className="w-full min-h-[48px] touch-manipulation"
                         disabled={isLoading}
                         onClick={handleGoogleAuth}
                       >
@@ -397,7 +399,7 @@ const Auth = () => {
                       </div>
                       <Button 
                         type="submit" 
-                        className="w-full" 
+                        className="w-full min-h-[48px] touch-manipulation" 
                         disabled={isLoading}
                       >
                         {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
@@ -418,7 +420,7 @@ const Auth = () => {
                       <Button
                         type="button"
                         variant="outline"
-                        className="w-full"
+                        className="w-full min-h-[48px] touch-manipulation"
                         disabled={isLoading}
                         onClick={handleGoogleAuth}
                       >

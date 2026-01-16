@@ -18,7 +18,43 @@ const Header = () => {
 
     const checkUserType = async () => {
       try {
-        // First priority: Check actual roles from user_roles table (source of truth)
+        // First: Check localStorage for explicit role (most recent user intent)
+        const storedRole = localStorage.getItem('user_role');
+        
+        // Check if user has a completed sitter profile (definitive sitter check)
+        const { data: sitterData } = await supabase
+          .from('sitters')
+          .select('id, approved_at')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        const hasCompletedSitterProfile = !!sitterData;
+        const isApprovedSitter = !!sitterData?.approved_at;
+
+        // Priority logic:
+        // 1. If user has a completed sitter profile -> they're a sitter
+        // 2. If localStorage says sitter -> they're in sitter flow
+        // 3. Check DB roles as fallback
+        // 4. Default to parent
+        
+        if (hasCompletedSitterProfile) {
+          setUserType('sitter');
+          localStorage.setItem('user_role', 'sitter');
+          return;
+        }
+        
+        if (storedRole === 'sitter') {
+          // User is in sitter signup flow (hasn't completed profile yet)
+          setUserType('sitter');
+          return;
+        }
+        
+        if (storedRole === 'parent') {
+          setUserType('parent');
+          return;
+        }
+
+        // Fallback: Check actual roles from user_roles table
         const { data: roles } = await supabase
           .from('user_roles')
           .select('role')
@@ -26,32 +62,7 @@ const Header = () => {
 
         const roleSet = new Set(roles?.map(r => r.role) || []);
         
-        // If user has explicit sitter role, use it
         if (roleSet.has('sitter')) {
-          setUserType('sitter');
-          return;
-        }
-        // If user has explicit parent role, use it
-        if (roleSet.has('parent')) {
-          setUserType('parent');
-          return;
-        }
-
-        // Second priority: Check localStorage for signup intent
-        const storedRole = localStorage.getItem('user_role');
-        if (storedRole === 'sitter' || storedRole === 'parent') {
-          setUserType(storedRole);
-          return;
-        }
-
-        // Third priority: Check which profile exists and is complete
-        const { data: sitterData } = await supabase
-          .from('sitters')
-          .select('id, approved_at')
-          .eq('user_id', user.id)
-          .maybeSingle();
-
-        if (sitterData?.approved_at) {
           setUserType('sitter');
           return;
         }
