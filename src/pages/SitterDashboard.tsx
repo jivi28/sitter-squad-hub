@@ -1,4 +1,5 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -30,8 +31,17 @@ interface SitterProfile {
 const SitterDashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const [searchParams, setSearchParams] = useSearchParams();
   const [sitterProfile, setSitterProfile] = useState<SitterProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  
+  // Get active tab from URL, default to "requests"
+  const activeTab = searchParams.get("tab") || "requests";
+  
+  // Handle tab change - update URL
+  const handleTabChange = (value: string) => {
+    setSearchParams({ tab: value });
+  };
   
   // Onboarding
   const { showOnboarding, completeOnboarding } = useOnboarding("sitter");
@@ -184,7 +194,7 @@ const SitterDashboard = () => {
           </div>
 
           {/* Main Content Tabs */}
-          <Tabs defaultValue="requests" className="space-y-6 pb-20 md:pb-6">
+          <Tabs value={activeTab} onValueChange={handleTabChange} className="space-y-6 pb-20 md:pb-6">
             <TabsList className="grid w-full grid-cols-4">
               <TabsTrigger value="requests">Requests</TabsTrigger>
               <TabsTrigger value="availability" className="hidden sm:flex">Availability</TabsTrigger>

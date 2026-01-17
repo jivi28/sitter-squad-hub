@@ -97,7 +97,25 @@ export const MobileBottomNav = ({ userType }: MobileBottomNavProps) => {
     if (path === "/") {
       return location.pathname === "/";
     }
-    return location.pathname + location.search === path || location.pathname.startsWith(path);
+    // Parse the nav path to get pathname and search params
+    const [navPath, navSearch] = path.split('?');
+    
+    // Check if we're on the same base path
+    if (location.pathname !== navPath) {
+      return false;
+    }
+    
+    // If the nav item has query params, check if they match
+    if (navSearch) {
+      const navParams = new URLSearchParams(navSearch);
+      const currentParams = new URLSearchParams(location.search);
+      // Check if the tab param matches
+      const navTab = navParams.get('tab');
+      const currentTab = currentParams.get('tab');
+      return navTab === currentTab;
+    }
+    
+    return true;
   };
 
   return (
