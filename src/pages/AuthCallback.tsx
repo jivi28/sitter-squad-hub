@@ -1,49 +1,91 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Loader2 } from "lucide-react";
+import { useToast } from "@/hooks/use-toast";
 
 const AuthCallback = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
+  const { toast } = useToast();
+  const [status, setStatus] = useState("Setting up your account...");
   
   useEffect(() => {
-    handleAuthCallback();
+    // Listen for auth state change - this is more reliable than getSession after OAuth
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log('AuthCallback: auth event:', event, 'session:', !!session);
+        
+        if (event === 'SIGNED_IN' && session?.user) {
+          // User just signed in via OAuth
+          await handleAuthComplete(session.user.id);
+        } else if (event === 'INITIAL_SESSION') {
+          // Page load - check if there's already a session
+          if (session?.user) {
+            await handleAuthComplete(session.user.id);
+          } else {
+            // No session, redirect to auth
+            console.log('AuthCallback: No session on initial load');
+            navigate('/auth');
+          }
+        }
+      }
+    );
+
+    // Cleanup subscription
+    return () => {
+      subscription.unsubscribe();
+    };
   }, []);
 
-  const handleAuthCallback = async () => {
+  const handleAuthComplete = async (userId: string) => {
     try {
-      // Get the current session
-      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+      setStatus("Checking your account...");
       
-      if (sessionError) {
-        console.error('Session error:', sessionError);
-        navigate('/auth');
-        return;
-      }
-
-      if (!session?.user) {
-        console.error('No user in session');
-        navigate('/auth');
-        return;
-      }
-
-      const userId = session.user.id;
+      // Get the pending role from OAuth flow (stored before redirect)
+      // This represents the user's EXPLICIT choice during signup
+      const pendingRole = searchParams.get('role') || localStorage.getItem('pending_role');
+      console.log('AuthCallback: pendingRole from URL/localStorage:', pendingRole);
       
-      // Check actual roles from database first
+      // Check if user already has a conflicting role
+      if (pendingRole === 'sitter' || pendingRole === 'parent') {
+        const { data: hasConflict, error: conflictError } = await supabase
+          .rpc('has_conflicting_role', { 
+            _user_id: userId, 
+            _intended_role: pendingRole 
+          });
+        
+        if (conflictError) {
+          console.error('Error checking role conflict:', conflictError);
+        }
+        
+        if (hasConflict) {
+          const existingRole = pendingRole === 'sitter' ? 'parent' : 'sitter';
+          toast({
+            title: "Account Already Exists",
+            description: `This email is already registered as a ${existingRole}. You cannot use the same email for both parent and sitter accounts.`,
+            variant: "destructive",
+          });
+          
+          // Sign out and redirect to auth
+          await supabase.auth.signOut();
+          localStorage.removeItem('pending_role');
+          localStorage.removeItem('user_role');
+          navigate('/auth');
+          return;
+        }
+      }
+      
+      // Check actual roles from database
       const { data: dbRoles } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId);
 
       const roleSet = new Set(dbRoles?.map(r => r.role) || []);
+      console.log('AuthCallback: DB roles:', Array.from(roleSet));
       
-      // Get the pending role from OAuth flow (stored before redirect)
-      // This is CRITICAL: The pending_role represents the user's EXPLICIT choice during signup
-      const pendingRole = searchParams.get('role') || localStorage.getItem('pending_role');
-      const pendingIsValid = pendingRole === 'sitter' || pendingRole === 'parent';
-      
-      // Check if user has a completed sitter profile (not just the role)
+      // Check if user has a completed sitter profile
       const { data: existingSitter } = await supabase
         .from('sitters')
         .select('id, approved_at')
@@ -54,8 +96,7 @@ const AuthCallback = () => {
       const isApprovedSitter = !!existingSitter?.approved_at;
       
       // Determine role with this priority:
-      // 1. If pending_role is 'sitter' -> ALWAYS route to sitter flow (user explicitly chose sitter)
-      //    (A parent role may exist due to auto-profile-creation trigger, ignore it for new sitter signups)
+      // 1. If pending_role is 'sitter' -> route to sitter flow (user explicitly chose)
       // 2. If user has a completed sitter profile in DB -> they're a sitter
       // 3. If pending_role is 'parent' -> route to parent flow
       // 4. Check DB roles as fallback
@@ -63,50 +104,48 @@ const AuthCallback = () => {
       let role: string;
 
       if (pendingRole === 'sitter') {
-        // User explicitly selected "Become a Sitter" - this takes priority over any auto-assigned parent role
         role = 'sitter';
         console.log('AuthCallback: Using pending sitter role (user explicit choice)');
       } else if (hasCompletedSitterProfile) {
-        // User has a sitter profile in DB - they're a sitter
         role = 'sitter';
         console.log('AuthCallback: User has existing sitter profile');
       } else if (pendingRole === 'parent') {
-        // User explicitly selected "Book a Sitter"
         role = 'parent';
         console.log('AuthCallback: Using pending parent role (user explicit choice)');
       } else if (roleSet.has('sitter')) {
-        // DB says sitter (shouldn't happen without sitter profile, but handle it)
         role = 'sitter';
       } else if (roleSet.has('parent')) {
-        // DB says parent and no pending role - existing parent user
         role = 'parent';
       } else {
-        // No role info at all - default to parent
         role = 'parent';
       }
 
-      console.log('AuthCallback - determined role:', role, 'pendingRole:', pendingRole, 'dbRoles:', Array.from(roleSet));
+      console.log('AuthCallback: Final determined role:', role);
       
       // Sync localStorage with determined role
       localStorage.setItem('user_role', role);
       localStorage.removeItem('pending_role');
 
       if (role === 'sitter') {
-        // We already checked for sitter profile above, reuse that data
-        // If no profile or not approved, go to signup
+        if (!hasCompletedSitterProfile) {
+          console.log('AuthCallback: No sitter profile, redirecting to signup');
+          navigate('/sitter-signup');
+          return;
+        }
+        
         if (!isApprovedSitter) {
           console.log('AuthCallback: Sitter not approved, redirecting to signup');
           navigate('/sitter-signup');
           return;
         }
 
-        // Has approved profile, go to dashboard
         console.log('AuthCallback: Approved sitter, redirecting to dashboard');
         navigate('/sitter-dashboard');
         return;
       }
 
       // Parent role - check for complete profile
+      setStatus("Loading your profile...");
       const { data: profileData, error: profileError } = await supabase
         .from('profiles')
         .select('*')
@@ -117,8 +156,7 @@ const AuthCallback = () => {
         console.error('Error checking profile:', profileError);
       }
 
-      // Determine profile completeness with tolerant rules (handles NULL and empty strings)
-      // Requires: essentials + (children OR pets) with their details
+      // Determine profile completeness
       const isNonEmpty = (v: any) => v != null && typeof v === 'string' && v.trim().length > 0;
       const essentialsComplete = !!profileData &&
                            isNonEmpty(profileData.first_name) &&
@@ -126,19 +164,16 @@ const AuthCallback = () => {
                            isNonEmpty(profileData.phone) &&
                            isNonEmpty(profileData.address);
       
-      // Must have at least children OR pets
       const hasChildren = typeof profileData?.num_children === 'number' && profileData.num_children > 0;
       const hasPets = typeof profileData?.num_pets === 'number' && profileData.num_pets > 0;
       const hasChildrenOrPets = hasChildren || hasPets;
       
-      // If has children, must have ages. If has pets, must have details.
       const childrenInfoOk = !hasChildren || isNonEmpty(profileData?.children_ages);
       const petsInfoOk = !hasPets || isNonEmpty(profileData?.pet_details);
       
       const isComplete = essentialsComplete && hasChildrenOrPets && childrenInfoOk && petsInfoOk;
 
       if (!isComplete) {
-        // Profile incomplete, go to signup
         navigate('/parent-signup');
         return;
       }
@@ -146,9 +181,8 @@ const AuthCallback = () => {
       // Profile complete, check for bookings to decide which tab
       const { data: bookings } = await supabase
         .from('bookings')
-        .select('*')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
+        .select('status, payment_status')
+        .eq('user_id', userId);
 
       const hasActiveBookings = bookings?.some(booking => 
         booking.status === 'pending' || 
@@ -164,6 +198,11 @@ const AuthCallback = () => {
 
     } catch (error) {
       console.error('Auth callback error:', error);
+      toast({
+        title: "Something went wrong",
+        description: "Please try signing in again.",
+        variant: "destructive",
+      });
       navigate('/auth');
     }
   };
@@ -171,8 +210,8 @@ const AuthCallback = () => {
   return (
     <div className="min-h-screen bg-background flex items-center justify-center">
       <div className="text-center">
-        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4" />
-        <p className="text-muted-foreground">Setting up your account...</p>
+        <Loader2 className="h-8 w-8 animate-spin mx-auto mb-4 text-primary" />
+        <p className="text-muted-foreground">{status}</p>
       </div>
     </div>
   );

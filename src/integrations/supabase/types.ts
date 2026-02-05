@@ -371,6 +371,13 @@ export type Database = {
         Args: { _parent_user_id: string; _sitter_id: string }
         Returns: boolean
       }
+      has_conflicting_role: {
+        Args: {
+          _intended_role: Database["public"]["Enums"]["app_role"]
+          _user_id: string
+        }
+        Returns: boolean
+      }
       has_role: {
         Args: {
           _role: Database["public"]["Enums"]["app_role"]
