@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -10,13 +10,12 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
-  const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   
   // Determine role from URL parameter or default to 'parent'
@@ -116,6 +115,21 @@ const Auth = () => {
       if (error) throw error;
 
       if (data.user) {
+        // Check for role conflict
+        const { data: hasConflict } = await supabase
+          .rpc('has_conflicting_role', { 
+            _user_id: data.user.id, 
+            _intended_role: selectedRole 
+          });
+        
+        if (hasConflict) {
+          const existingRole = selectedRole === 'sitter' ? 'parent' : 'sitter';
+          setError(`This account is registered as a ${existingRole}. Please select "${existingRole === 'parent' ? 'Book a Sitter' : 'Become a Sitter'}" to log in.`);
+          await supabase.auth.signOut();
+          setIsLoading(false);
+          return;
+        }
+        
         toast({
           title: "Success!",
           description: "You have been logged in successfully.",
