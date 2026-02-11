@@ -1,4 +1,4 @@
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import Header from "@/components/Header";
 import Hero from "@/components/Hero";
@@ -32,7 +32,7 @@ const resolveRedirectPath = async (userId: string): Promise<string> => {
     .from("bookings")
     .select("id")
     .eq("user_id", userId)
-    .or("status.eq.pending,status.eq.confirmed,payment_status.eq.pending")
+    .or("status.in.(pending,confirmed),payment_status.eq.pending")
     .limit(1)
     .maybeSingle();
 
@@ -50,23 +50,27 @@ const Index = () => {
   const { user, loading } = useAuth();
   const navigate = useNavigate();
   const redirectedRef = useRef(false);
+  const [redirecting, setRedirecting] = useState(false);
 
   useEffect(() => {
     if (loading || !user || redirectedRef.current) return;
 
     // Guard against double execution
     redirectedRef.current = true;
+    setRedirecting(true);
 
     resolveRedirectPath(user.id)
       .then((path) => navigate(path, { replace: true }))
       .catch((err) => {
         console.error("Index: Redirect failed:", err);
+        setRedirecting(false);
+        redirectedRef.current = false;
         navigate("/parent-dashboard?tab=book-sitter", { replace: true });
       });
   }, [user, loading, navigate]);
 
-  // Show spinner while auth is loading or redirect is in progress
-  if (loading || user) {
+  // Show spinner only while auth is resolving or redirect is in flight
+  if (loading || redirecting) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <motion.div
