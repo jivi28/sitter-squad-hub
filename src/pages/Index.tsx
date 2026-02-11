@@ -8,26 +8,18 @@ import { supabase } from "@/integrations/supabase/client";
 import { detectUserRole } from "@/utils/roleDetection";
 import { motion } from "framer-motion";
 
-/**
- * Determines the appropriate dashboard route for an authenticated user.
- * Priority: sitter-only → sitter-dashboard, otherwise parent flow.
- */
 const resolveRedirectPath = async (userId: string): Promise<string> => {
-  // 1. Detect roles
   const roles = await detectUserRole(userId);
 
-  // Edge case: no roles assigned at all
   if (!roles.isParent && !roles.isSitter) {
     console.warn("Index: User has no roles, defaulting to parent signup");
     return "/parent-signup";
   }
 
-  // Sitter-only → sitter dashboard
   if (roles.isSitter && !roles.isParent) {
     return "/sitter-dashboard";
   }
 
-  // Parent (or dual-role) → check for active bookings using minimal query
   const { data: activeBooking, error } = await supabase
     .from("bookings")
     .select("id")
@@ -55,7 +47,6 @@ const Index = () => {
   useEffect(() => {
     if (loading || !user || redirectedRef.current) return;
 
-    // Guard against double execution
     redirectedRef.current = true;
     setRedirecting(true);
 
@@ -63,13 +54,11 @@ const Index = () => {
       .then((path) => navigate(path, { replace: true }))
       .catch((err) => {
         console.error("Index: Redirect failed:", err);
-        setRedirecting(false);
-        redirectedRef.current = false;
         navigate("/parent-dashboard?tab=book-sitter", { replace: true });
-      });
+      })
+      .finally(() => setRedirecting(false));
   }, [user, loading, navigate]);
 
-  // Show spinner only while auth is resolving or redirect is in flight
   if (loading || redirecting) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
