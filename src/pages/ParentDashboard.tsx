@@ -135,9 +135,9 @@ const ParentDashboard = () => {
       const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
       const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
 
-      // Only count completed/paid bookings for spending
+      // Only count completed bookings for spending
       const paidBookings = bookings?.filter(b => 
-        b.status === 'completed' || b.payment_status === 'paid'
+        b.status === 'completed' || b.payment_status === 'completed'
       ) || [];
 
       const stats: BookingStats = {

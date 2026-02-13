@@ -50,7 +50,7 @@ const PaymentSuccess = () => {
 
       
 
-      if (booking?.payment_status === 'completed' || booking?.payment_status === 'paid') {
+      if (booking?.payment_status === 'completed') {
         // Payment confirmed by webhook
         setVerified(true);
         setVerifying(false);
@@ -83,7 +83,7 @@ const PaymentSuccess = () => {
               .eq('id', bookingId)
               .single();
 
-            if (updatedBooking?.payment_status === 'completed' || updatedBooking?.payment_status === 'paid') {
+            if (updatedBooking?.payment_status === 'completed') {
               
               setVerified(true);
               setVerifying(false);
