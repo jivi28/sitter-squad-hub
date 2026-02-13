@@ -138,10 +138,6 @@ const ParentBookingHistory = () => {
         return "default";
       case "pending":
         return "secondary";
-      case "processing":
-        return "outline";
-      case "failed":
-        return "destructive";
       default:
         return "secondary";
     }
@@ -195,7 +191,6 @@ const ParentBookingHistory = () => {
         total_cost: estimatedCost,
         status: "pending",
         payment_status: "pending",
-        sitter_id: selectedBooking.sitter_id,
         request_expires_at: requestExpiresAt.toISOString(),
       });
 
