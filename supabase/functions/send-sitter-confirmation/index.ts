@@ -9,6 +9,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 // Initialize Supabase client with service role for server-side lookups
 const supabaseUrl = Deno.env.get('SUPABASE_URL') as string;
 const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string;
@@ -118,9 +127,9 @@ const handler = async (req: Request): Promise<Response> => {
         <h1 style="color: #333; text-align: center; margin-bottom: 30px;">Congratulations! You've Been Selected! 🎉</h1>
         
         <div style="background-color: #d4edda; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #28a745;">
-          <h2 style="color: #155724; margin-top: 0;">Great News, ${sitterName}!</h2>
+          <h2 style="color: #155724; margin-top: 0;">Great News, ${escapeHtml(sitterName)}!</h2>
           <p style="font-size: 16px; line-height: 1.6; color: #155724;">
-            You have been <strong>selected</strong> by ${parentName} for their babysitting request! 
+            You have been <strong>selected</strong> by ${escapeHtml(parentName)} for their babysitting request!
             Here are all the details you need:
           </p>
         </div>
@@ -148,7 +157,7 @@ const handler = async (req: Request): Promise<Response> => {
             ${preferredLanguage ? `
             <tr>
               <td style="padding: 10px 0; font-weight: bold; color: #666;">Preferred Language:</td>
-              <td style="padding: 10px 0;">${preferredLanguage}</td>
+              <td style="padding: 10px 0;">${escapeHtml(preferredLanguage)}</td>
             </tr>
             ` : ''}
           </table>
@@ -160,20 +169,20 @@ const handler = async (req: Request): Promise<Response> => {
           <table style="width: 100%; border-collapse: collapse;">
             <tr style="border-bottom: 1px solid #f1f1f1;">
               <td style="padding: 10px 0; font-weight: bold; color: #666;">Parent Name:</td>
-              <td style="padding: 10px 0;">${parentName}</td>
+              <td style="padding: 10px 0;">${escapeHtml(parentName)}</td>
             </tr>
             <tr style="border-bottom: 1px solid #f1f1f1;">
               <td style="padding: 10px 0; font-weight: bold; color: #666;">Phone:</td>
-              <td style="padding: 10px 0; font-weight: bold;">${parentPhone}</td>
+              <td style="padding: 10px 0; font-weight: bold;">${escapeHtml(parentPhone)}</td>
             </tr>
             <tr${emergencyContact ? ' style="border-bottom: 1px solid #f1f1f1;"' : ''}>
               <td style="padding: 10px 0; font-weight: bold; color: #666;">Address:</td>
-              <td style="padding: 10px 0;">${parentAddress}</td>
+              <td style="padding: 10px 0;">${escapeHtml(parentAddress)}</td>
             </tr>
             ${emergencyContact ? `
             <tr>
               <td style="padding: 10px 0; font-weight: bold; color: #666;">Emergency Contact:</td>
-              <td style="padding: 10px 0; color: #dc3545; font-weight: bold;">${emergencyContact}</td>
+              <td style="padding: 10px 0; color: #dc3545; font-weight: bold;">${escapeHtml(emergencyContact)}</td>
             </tr>
             ` : ''}
           </table>
@@ -183,7 +192,7 @@ const handler = async (req: Request): Promise<Response> => {
         <div style="background-color: #fff3cd; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #ffc107;">
           <h3 style="color: #856404; margin-top: 0;">Special Instructions</h3>
           <p style="margin: 0; line-height: 1.6; color: #856404; font-style: italic;">
-            ${specialNotes}
+            ${escapeHtml(specialNotes)}
           </p>
         </div>
         ` : ''}
@@ -203,7 +212,7 @@ const handler = async (req: Request): Promise<Response> => {
         <div style="background-color: #d1ecf1; padding: 20px; border-radius: 8px; margin-bottom: 20px; border-left: 4px solid #bee5eb;">
           <h3 style="color: #0c5460; margin-top: 0;">Next Steps</h3>
           <p style="margin: 0; line-height: 1.6; color: #0c5460;">
-            <strong>1.</strong> Contact ${parentName} at ${parentPhone} to confirm the booking<br>
+            <strong>1.</strong> Contact ${escapeHtml(parentName)} at ${escapeHtml(parentPhone)} to confirm the booking<br>
             <strong>2.</strong> Ask any questions about the children or household<br>
             <strong>3.</strong> Confirm the address and arrival time<br>
             <strong>4.</strong> Mark your calendar for ${formattedDate} at ${startTime}

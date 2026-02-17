@@ -9,6 +9,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 // Initialize Supabase client with service role for server-side lookups
 const supabaseUrl = Deno.env.get('SUPABASE_URL') as string;
 const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string;
@@ -118,9 +127,9 @@ const handler = async (req: Request): Promise<Response> => {
         <h1 style="color: #333; text-align: center; margin-bottom: 30px;">Booking Confirmed! 🎉</h1>
         
         <div style="background-color: #f8f9fa; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
-          <h2 style="color: #28a745; margin-top: 0;">Great News, ${parentName}!</h2>
+          <h2 style="color: #28a745; margin-top: 0;">Great News, ${escapeHtml(parentName)}!</h2>
           <p style="font-size: 16px; line-height: 1.6;">
-            Your babysitting request has been <strong>confirmed</strong> by ${sitterName}. 
+            Your babysitting request has been <strong>confirmed</strong> by ${escapeHtml(sitterName)}.
             Here are the details of your booking:
           </p>
         </div>
@@ -131,7 +140,7 @@ const handler = async (req: Request): Promise<Response> => {
           <table style="width: 100%; border-collapse: collapse;">
             <tr style="border-bottom: 1px solid #f1f1f1;">
               <td style="padding: 10px 0; font-weight: bold; color: #666;">Sitter:</td>
-              <td style="padding: 10px 0;">${sitterName}</td>
+              <td style="padding: 10px 0;">${escapeHtml(sitterName)}</td>
             </tr>
             <tr style="border-bottom: 1px solid #f1f1f1;">
               <td style="padding: 10px 0; font-weight: bold; color: #666;">Date:</td>
@@ -151,12 +160,12 @@ const handler = async (req: Request): Promise<Response> => {
             </tr>
             <tr style="border-bottom: 1px solid #f1f1f1;">
               <td style="padding: 10px 0; font-weight: bold; color: #666;">Address:</td>
-              <td style="padding: 10px 0;">${address}</td>
+              <td style="padding: 10px 0;">${escapeHtml(address)}</td>
             </tr>
             ${preferredLanguage ? `
             <tr style="border-bottom: 1px solid #f1f1f1;">
               <td style="padding: 10px 0; font-weight: bold; color: #666;">Preferred Language:</td>
-              <td style="padding: 10px 0;">${preferredLanguage}</td>
+              <td style="padding: 10px 0;">${escapeHtml(preferredLanguage)}</td>
             </tr>
             ` : ''}
           </table>
@@ -164,7 +173,7 @@ const handler = async (req: Request): Promise<Response> => {
           ${specialNotes ? `
           <div style="margin-top: 20px; padding: 15px; background-color: #f8f9fa; border-radius: 5px;">
             <h4 style="margin: 0 0 10px 0; color: #666;">Special Notes:</h4>
-            <p style="margin: 0; font-style: italic;">${specialNotes}</p>
+            <p style="margin: 0; font-style: italic;">${escapeHtml(specialNotes)}</p>
           </div>
           ` : ''}
         </div>
@@ -172,7 +181,7 @@ const handler = async (req: Request): Promise<Response> => {
         <div style="background-color: #e3f2fd; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
           <h3 style="color: #1976d2; margin-top: 0;">What's Next?</h3>
           <ul style="padding-left: 20px; line-height: 1.8;">
-            <li>Make sure you have ${sitterName}'s contact information</li>
+            <li>Make sure you have ${escapeHtml(sitterName)}'s contact information</li>
             <li>Prepare any specific instructions for your children</li>
             <li>Have payment ready (€${totalCost})</li>
             <li>Be available to answer any last-minute questions</li>
@@ -193,7 +202,7 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResponse = await resend.emails.send({
       from: fromAddress as string,
       to: [resolvedParentEmail],
-      subject: `Booking Confirmed with ${sitterName} - ${formattedDate}`,
+      subject: `Booking Confirmed with ${escapeHtml(sitterName)} - ${formattedDate}`,
       html: emailContent,
     });
 

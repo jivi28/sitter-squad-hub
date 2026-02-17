@@ -9,6 +9,15 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 // Initialize Supabase client with service role for server-side lookups
 const supabaseUrl = Deno.env.get('SUPABASE_URL') as string;
 const supabaseServiceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') as string;
@@ -93,7 +102,7 @@ const handler = async (req: Request): Promise<Response> => {
         <div style="background-color: #e8f5e8; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
           <h2 style="color: #28a745; margin-top: 0;">Great News!</h2>
           <p style="font-size: 16px; line-height: 1.6;">
-            <strong>${sitterName}</strong> has applied for your babysitting request. 
+            <strong>${escapeHtml(sitterName)}</strong> has applied for your babysitting request. 
             Here are the details:
           </p>
         </div>
@@ -123,7 +132,7 @@ const handler = async (req: Request): Promise<Response> => {
           <table style="width: 100%; border-collapse: collapse;">
             <tr style="border-bottom: 1px solid #f1f1f1;">
               <td style="padding: 10px 0; font-weight: bold; color: #666;">Name:</td>
-              <td style="padding: 10px 0;">${sitterName}</td>
+              <td style="padding: 10px 0;">${escapeHtml(sitterName)}</td>
             </tr>
             <tr style="border-bottom: 1px solid #f1f1f1;">
               <td style="padding: 10px 0; font-weight: bold; color: #666;">Hourly Rate:</td>
@@ -136,21 +145,21 @@ const handler = async (req: Request): Promise<Response> => {
             ${sitterPhone ? `
             <tr style="border-bottom: 1px solid #f1f1f1;">
               <td style="padding: 10px 0; font-weight: bold; color: #666;">Phone:</td>
-              <td style="padding: 10px 0;">${sitterPhone}</td>
+              <td style="padding: 10px 0;">${escapeHtml(sitterPhone)}</td>
             </tr>
             ` : ''}
             ${sitterExperience ? `
             <tr>
               <td style="padding: 10px 0; font-weight: bold; color: #666;">Experience:</td>
-              <td style="padding: 10px 0;">${sitterExperience}</td>
+              <td style="padding: 10px 0;">${escapeHtml(sitterExperience)}</td>
             </tr>
             ` : ''}
           </table>
 
           ${responseMessage ? `
           <div style="margin-top: 20px; padding: 15px; background-color: #e3f2fd; border-radius: 5px;">
-            <h4 style="margin: 0 0 10px 0; color: #1976d2;">Message from ${sitterName}:</h4>
-            <p style="margin: 0; font-style: italic;">${responseMessage}</p>
+            <h4 style="margin: 0 0 10px 0; color: #1976d2;">Message from ${escapeHtml(sitterName)}:</h4>
+            <p style="margin: 0; font-style: italic;">${escapeHtml(responseMessage)}</p>
           </div>
           ` : ''}
         </div>
@@ -184,7 +193,7 @@ const handler = async (req: Request): Promise<Response> => {
     const emailResponse = await resend.emails.send({
       from: fromAddress as string,
       to: [parentEmail],
-      subject: `New Application from ${sitterName} - ${formattedDate}`,
+      subject: `New Application from ${escapeHtml(sitterName)} - ${formattedDate}`,
       html: emailContent,
     });
 
