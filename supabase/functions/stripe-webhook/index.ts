@@ -99,7 +99,6 @@ serve(async (req) => {
 
       // Verify payment amount matches booking cost
       const paidAmount = session.amount_total; // in cents
-      const paidAmount = session.amount_total; // in cents
       const expectedAmount = Math.round(Number(booking.total_cost) * 100); // convert to cents
       if (paidAmount !== null && paidAmount !== expectedAmount) {
         console.error(`Payment amount mismatch: paid ${paidAmount}, expected ${expectedAmount}`);
