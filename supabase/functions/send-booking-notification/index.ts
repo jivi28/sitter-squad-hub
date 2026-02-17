@@ -10,6 +10,15 @@ const corsHeaders = {
     "authorization, x-client-info, apikey, content-type",
 };
 
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL") ?? "",
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -87,7 +96,7 @@ const handler = async (req: Request): Promise<Response> => {
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
         <h2 style="color: #2563eb;">${subjectLine}</h2>
         
-        <p>Hi ${sitterName},</p>
+        <p>Hi ${escapeHtml(sitterName)},</p>
         
         <p>A new ${serviceTypeLabel.toLowerCase()} request has been posted that matches your availability:</p>
         
@@ -97,8 +106,8 @@ const handler = async (req: Request): Promise<Response> => {
             <li style="margin: 8px 0;"><strong>📅 Date:</strong> ${bookingDate}</li>
             <li style="margin: 8px 0;"><strong>🕐 Time:</strong> ${startTime} - ${endTime}</li>
             <li style="margin: 8px 0;"><strong>${serviceType === 'pet_sitting' ? '🐾' : '👶'} ${childrenOrPetsLabel}:</strong> ${bookingDetails.num_children}</li>
-            ${bookingDetails.preferred_language ? `<li style="margin: 8px 0;"><strong>🗣️ Language:</strong> ${bookingDetails.preferred_language}</li>` : ''}
-            ${bookingDetails.special_notes ? `<li style="margin: 8px 0;"><strong>📝 Special Notes:</strong> ${bookingDetails.special_notes}</li>` : ''}
+            ${bookingDetails.preferred_language ? `<li style="margin: 8px 0;"><strong>🗣️ Language:</strong> ${escapeHtml(bookingDetails.preferred_language)}</li>` : ''}
+            ${bookingDetails.special_notes ? `<li style="margin: 8px 0;"><strong>📝 Special Notes:</strong> ${escapeHtml(bookingDetails.special_notes)}</li>` : ''}
           </ul>
         </div>
         

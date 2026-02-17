@@ -64,6 +64,51 @@ serve(async (req) => {
 
       console.log("Payment completed for booking:", bookingId);
 
+      // Verify booking exists and is in correct state
+      const { data: booking, error: fetchError } = await supabaseClient
+        .from("bookings")
+        .select("id, status, total_cost, user_id, payment_status")
+        .eq("id", bookingId)
+        .single();
+
+      if (fetchError || !booking) {
+        console.error("Booking not found:", bookingId);
+        return new Response(
+          JSON.stringify({ error: "Booking not found" }),
+          { status: 400, headers: corsHeaders }
+        );
+      }
+
+      // Idempotency: skip if already completed
+      if (booking.payment_status === "completed") {
+        console.log("Payment already completed for booking:", bookingId);
+        return new Response(JSON.stringify({ received: true, status: "already_processed" }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 200,
+        });
+      }
+
+      // Verify booking is in a valid state for payment
+      if (booking.status !== "confirmed") {
+        console.error("Booking not in confirmed state:", booking.status);
+        return new Response(
+          JSON.stringify({ error: "Booking not in valid state for payment" }),
+          { status: 400, headers: corsHeaders }
+        );
+      }
+
+      // Verify payment amount matches booking cost
+      const paidAmount = session.amount_total; // in cents
+      const paidAmount = session.amount_total; // in cents
+      const expectedAmount = Math.round(Number(booking.total_cost) * 100); // convert to cents
+      if (paidAmount !== null && paidAmount !== expectedAmount) {
+        console.error(`Payment amount mismatch: paid ${paidAmount}, expected ${expectedAmount}`);
+        return new Response(
+          JSON.stringify({ error: "Payment amount mismatch" }),
+          { status: 400, headers: corsHeaders }
+        );
+      }
+
       // Update booking payment status
       const { error: updateError } = await supabaseClient
         .from("bookings")
@@ -71,7 +116,8 @@ serve(async (req) => {
           payment_status: "completed",
           updated_at: new Date().toISOString(),
         })
-        .eq("id", bookingId);
+        .eq("id", bookingId)
+        .eq("status", "confirmed");
 
       if (updateError) {
         console.error("Failed to update booking:", updateError);
