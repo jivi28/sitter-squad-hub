@@ -82,13 +82,13 @@ export const useBookingUpdates = ({ userId, userRole }: UseBookingUpdatesProps) 
         const sitterMap: Record<string, { first_name: string; last_name: string }> = {};
         if (sitterIds.length > 0) {
           const { data: sittersData, error: sittersError } = await supabase
-            .from('sitters')
+            .from('sitters_public_view' as any)
             .select('id, first_name, last_name')
             .in('id', sitterIds);
 
           // If RLS blocks this, we still want bookings to render.
           if (!sittersError && sittersData) {
-            for (const s of sittersData) {
+            for (const s of sittersData as any[]) {
               sitterMap[s.id] = { first_name: s.first_name, last_name: s.last_name };
             }
           }

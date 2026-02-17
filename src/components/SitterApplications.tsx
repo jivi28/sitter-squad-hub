@@ -63,7 +63,7 @@ const SitterApplications = ({ bookingId, onSitterSelected }: SitterApplicationsP
       const applicationsWithSitters = await Promise.all(
         (data || []).map(async (application) => {
           const { data: sitterData, error: sitterError } = await supabase
-            .from("sitters")
+            .from("sitters_public_view" as any)
             .select(`
               id, first_name, last_name, hourly_rate, experience, 
               languages, child_age_groups, special_skills, school
@@ -78,7 +78,7 @@ const SitterApplications = ({ bookingId, onSitterSelected }: SitterApplicationsP
 
           return {
             ...application,
-            sitters: sitterData
+            sitters: sitterData as any
           };
         })
       );

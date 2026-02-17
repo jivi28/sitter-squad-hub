@@ -60,7 +60,7 @@ export const FavoriteSitters = () => {
       const favoritesWithSitters = await Promise.all(
         favoritesData.map(async (fav) => {
           const { data: sitterData, error: sitterError } = await supabase
-            .from("sitters")
+            .from("sitters_public_view" as any)
             .select("id, first_name, last_name, hourly_rate, experience, languages, special_skills, school, pet_experience")
             .eq("id", fav.sitter_id)
             .single();
@@ -72,7 +72,7 @@ export const FavoriteSitters = () => {
 
           return {
             ...fav,
-            sitters: sitterData
+            sitters: sitterData as any
           };
         })
       );

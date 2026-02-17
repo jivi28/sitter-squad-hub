@@ -160,6 +160,9 @@ serve(async (req) => {
         console.log('Sending parent notification email');
         
         const { data: notificationData, error: notificationError } = await supabaseClient.functions.invoke('send-parent-notification', {
+          headers: {
+            'x-internal-secret': Deno.env.get('INTERNAL_FUNCTION_SECRET') || '',
+          },
           body: {
             bookingId: booking_id,
             sitterName: `${sitter.first_name} ${sitter.last_name}`,
