@@ -54,6 +54,13 @@ export type Database = {
             referencedRelation: "sitters"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "booking_responses_sitter_id_fkey"
+            columns: ["sitter_id"]
+            isOneToOne: false
+            referencedRelation: "sitters_public_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       bookings: {
@@ -259,6 +266,13 @@ export type Database = {
             referencedRelation: "sitters"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "sitter_unavailable_dates_sitter_id_fkey"
+            columns: ["sitter_id"]
+            isOneToOne: false
+            referencedRelation: "sitters_public_view"
+            referencedColumns: ["id"]
+          },
         ]
       }
       sitters: {
@@ -359,7 +373,60 @@ export type Database = {
       }
     }
     Views: {
-      [_ in never]: never
+      sitters_public_view: {
+        Row: {
+          approved_at: string | null
+          availability: Json | null
+          child_age_groups: Json | null
+          experience: string | null
+          first_name: string | null
+          hourly_rate: number | null
+          id: string | null
+          languages: string[] | null
+          last_name: string | null
+          pet_experience: string | null
+          school: string | null
+          special_skills: string | null
+          status: string | null
+          transportation: string | null
+          user_id: string | null
+        }
+        Insert: {
+          approved_at?: string | null
+          availability?: Json | null
+          child_age_groups?: Json | null
+          experience?: string | null
+          first_name?: string | null
+          hourly_rate?: number | null
+          id?: string | null
+          languages?: string[] | null
+          last_name?: string | null
+          pet_experience?: string | null
+          school?: string | null
+          special_skills?: string | null
+          status?: string | null
+          transportation?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          approved_at?: string | null
+          availability?: Json | null
+          child_age_groups?: Json | null
+          experience?: string | null
+          first_name?: string | null
+          hourly_rate?: number | null
+          id?: string | null
+          languages?: string[] | null
+          last_name?: string | null
+          pet_experience?: string | null
+          school?: string | null
+          special_skills?: string | null
+          status?: string | null
+          transportation?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
     }
     Functions: {
       expire_old_booking_requests: { Args: never; Returns: undefined }
