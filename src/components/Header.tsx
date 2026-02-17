@@ -132,11 +132,11 @@ const Header = () => {
               </>
             ) : (
               <>
-                <Button variant="outline" size="sm" onClick={() => window.location.href = '/auth?role=parent'}>
-                  Parent Login
+                <Button variant="outline" size="sm" onClick={() => window.location.href = '/auth?role=parent&mode=login'}>
+                   Parent Login
                 </Button>
-                <Button variant="trust" size="sm" onClick={() => window.location.href = '/auth?role=sitter'}>
-                  Sitter Login
+                <Button variant="trust" size="sm" onClick={() => window.location.href = '/auth?role=sitter&mode=login'}>
+                   Sitter Login
                 </Button>
               </>
             )}
@@ -180,12 +180,12 @@ const Header = () => {
                 </>
               ) : (
                 <>
-                  <Button variant="outline" size="sm" className="self-start" onClick={() => window.location.href = '/auth?role=parent'}>
-                    Parent Login
-                  </Button>
-                  <Button variant="trust" size="sm" className="self-start" onClick={() => window.location.href = '/auth?role=sitter'}>
-                    Sitter Login
-                  </Button>
+                   <Button variant="outline" size="sm" className="self-start" onClick={() => window.location.href = '/auth?role=parent&mode=login'}>
+                     Parent Login
+                   </Button>
+                   <Button variant="trust" size="sm" className="self-start" onClick={() => window.location.href = '/auth?role=sitter&mode=login'}>
+                     Sitter Login
+                   </Button>
                 </>
               )}
             </nav>
