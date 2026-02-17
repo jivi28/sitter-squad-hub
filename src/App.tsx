@@ -24,7 +24,7 @@ const SitterDashboard = lazy(() => import("./pages/SitterDashboard"));
 const ParentDashboard = lazy(() => import("./pages/ParentDashboard"));
 const VerifyEmail = lazy(() => import("./pages/VerifyEmail"));
 const PaymentSuccess = lazy(() => import("./pages/PaymentSuccess"));
-const SecuritySelfTest = lazy(() => import("./pages/SecuritySelfTest"));
+
 const NotFound = lazy(() => import("./pages/NotFound"));
 
 const queryClient = new QueryClient();
@@ -70,7 +70,7 @@ const AppContent = () => {
         <Route path="/sitter-dashboard" element={<SitterDashboard />} />
         <Route path="/verify-email" element={<VerifyEmail />} />
         <Route path="/payment-success" element={<PaymentSuccess />} />
-        <Route path="/security-self-test" element={<SecuritySelfTest />} />
+        
         {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
         <Route path="*" element={<NotFound />} />
       </Routes>
