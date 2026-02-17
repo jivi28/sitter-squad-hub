@@ -157,10 +157,10 @@ const Hero = () => {
                 </>
               ) : (
                 <>
-                  <Button variant="hero" size="lg" className="text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 w-full sm:w-auto" onClick={() => window.location.href = '/auth?role=parent'}>
-                    Sign In to Book
+                  <Button variant="hero" size="lg" className="text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 w-full sm:w-auto" onClick={() => window.location.href = '/auth?role=parent&mode=signup'}>
+                    Sign Up to Book
                   </Button>
-                  <Button variant="book" size="lg" className="text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 w-full sm:w-auto" onClick={() => window.location.href = '/auth?role=sitter'}>
+                  <Button variant="book" size="lg" className="text-base sm:text-lg px-6 sm:px-8 py-4 sm:py-6 w-full sm:w-auto" onClick={() => window.location.href = '/auth?role=sitter&mode=signup'}>
                     Become a Sitter
                   </Button>
                 </>
