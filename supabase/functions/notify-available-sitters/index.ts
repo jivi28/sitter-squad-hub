@@ -30,12 +30,46 @@ serve(async (req) => {
   }
 
   try {
+    // Authenticate the calling user
+    const authHeader = req.headers.get('Authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
+
+    const supabaseAuth = createClient(
+      Deno.env.get('SUPABASE_URL') ?? '',
+      Deno.env.get('SUPABASE_ANON_KEY') ?? '',
+      { global: { headers: { Authorization: authHeader } } }
+    );
+
+    const token = authHeader.replace('Bearer ', '');
+    const { data: claimsData, error: claimsError } = await supabaseAuth.auth.getClaims(token);
+    if (claimsError || !claimsData?.claims) {
+      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
+    const userId = claimsData.claims.sub;
+
     const supabaseClient = createClient(
       Deno.env.get('SUPABASE_URL') ?? '',
       Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? ''
     );
 
     const { booking_id, booking_date, start_time, end_time, num_children, special_notes, preferred_language, service_type = 'babysitting' }: NotificationRequest = await req.json();
+
+    // Verify the booking belongs to the authenticated user
+    const { data: booking, error: bookingError } = await supabaseClient
+      .from('bookings')
+      .select('user_id')
+      .eq('id', booking_id)
+      .single();
+
+    if (bookingError || !booking) {
+      return new Response(JSON.stringify({ error: 'Booking not found' }), { status: 404, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
+
+    if (booking.user_id !== userId) {
+      return new Response(JSON.stringify({ error: 'Forbidden: You can only notify sitters for your own bookings' }), { status: 403, headers: { 'Content-Type': 'application/json', ...corsHeaders } });
+    }
 
     console.log('Processing notification request:', { booking_id, booking_date, start_time, end_time });
 
