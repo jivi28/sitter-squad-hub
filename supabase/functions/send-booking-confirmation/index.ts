@@ -59,6 +59,17 @@ const handler = async (req: Request): Promise<Response> => {
   }
 
   try {
+    // Verify internal function secret to prevent unauthorized external calls
+    const internalSecret = req.headers.get('x-internal-secret');
+    const expectedSecret = Deno.env.get('INTERNAL_FUNCTION_SECRET');
+    if (!expectedSecret || internalSecret !== expectedSecret) {
+      console.error("Unauthorized call to send-booking-confirmation: invalid internal secret");
+      return new Response(JSON.stringify({ success: false, error: 'Unauthorized' }), {
+        status: 401,
+        headers: { "Content-Type": "application/json", ...corsHeaders },
+      });
+    }
+
     const requestData: BookingConfirmationRequest = await req.json();
     
     // Validate input data

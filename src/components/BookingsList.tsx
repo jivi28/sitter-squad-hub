@@ -203,49 +203,7 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
         )
       );
 
-      // Send confirmation email to parent if booking is confirmed
-      if (newStatus === 'confirmed') {
-        const booking = bookings.find(b => b.id === bookingId);
-        if (booking) {
-          try {
-            const parentName = booking.profiles
-              ? `${booking.profiles.first_name} ${booking.profiles.last_name}`
-              : 'Parent';
-            const address = booking.profiles?.address || '';
-            
-            const { data: emailData, error: emailError } = await supabase.functions.invoke('send-booking-confirmation', {
-              body: {
-                bookingId: booking.id,
-                parentUserId: booking.user_id,
-                parentName,
-                sitterName: booking.sitters ? `${booking.sitters.first_name} ${booking.sitters.last_name}` : 'Unknown',
-                bookingDate: booking.booking_date,
-                startTime: booking.start_time,
-                endTime: booking.end_time,
-                numChildren: booking.num_children,
-                totalCost: booking.total_cost,
-                address,
-                specialNotes: booking.special_notes,
-                preferredLanguage: booking.preferred_language
-              }
-            });
-            
-
-            if (emailError) {
-              console.error('Failed to send confirmation email:', emailError);
-              toast({
-                title: 'Email not sent',
-                description: typeof emailError.message === 'string' ? emailError.message : 'We could not notify the parent via email. Please verify your email sender settings.',
-                variant: 'destructive',
-              });
-            } else {
-              
-            }
-          } catch (emailError) {
-            console.error('Error sending confirmation email:', emailError);
-          }
-        }
-      }
+      // Note: Confirmation email is sent server-side by the select-sitter edge function.
 
       toast({
         title: "Success!",
