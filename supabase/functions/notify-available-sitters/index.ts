@@ -103,6 +103,9 @@ serve(async (req) => {
         console.log(`Sending notification email to sitter: ${sitter.first_name} ${sitter.last_name} (User ID: ${sitter.user_id})`);
         
         const { data: emailData, error: emailError } = await supabaseClient.functions.invoke('send-booking-notification', {
+          headers: {
+            'x-internal-secret': Deno.env.get('INTERNAL_FUNCTION_SECRET') || '',
+          },
           body: {
             sitterUserId: sitter.user_id,
             sitterName: `${sitter.first_name} ${sitter.last_name}`,
