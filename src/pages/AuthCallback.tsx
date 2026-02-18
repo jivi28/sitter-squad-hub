@@ -9,192 +9,105 @@ const AuthCallback = () => {
   const [searchParams] = useSearchParams();
   const { toast } = useToast();
   const [status, setStatus] = useState("Setting up your account...");
-  
+
   useEffect(() => {
-    // Listen for auth state change - this is more reliable than getSession after OAuth
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('AuthCallback: auth event:', event, 'session:', !!session);
-        
+
         if (event === 'SIGNED_IN' && session?.user) {
-          // User just signed in via OAuth
-          await handleAuthComplete(session.user.id);
+          await handleAuthComplete(session.user.id, session.access_token);
         } else if (event === 'INITIAL_SESSION') {
-          // Page load - check if there's already a session
           if (session?.user) {
-            await handleAuthComplete(session.user.id);
+            await handleAuthComplete(session.user.id, session.access_token);
           } else {
-            // No session, redirect to auth
-            console.log('AuthCallback: No session on initial load');
             navigate('/auth');
           }
         }
       }
     );
 
-    // Cleanup subscription
-    return () => {
-      subscription.unsubscribe();
-    };
+    return () => subscription.unsubscribe();
   }, []);
 
-  const handleAuthComplete = async (userId: string) => {
+  const handleAuthComplete = async (userId: string, accessToken: string) => {
     try {
       setStatus("Checking your account...");
-      
-      // Get the pending role from OAuth flow (stored before redirect)
-      // This represents the user's EXPLICIT choice during signup
-      const pendingRole = searchParams.get('role') || localStorage.getItem('pending_role');
-      console.log('AuthCallback: pendingRole from URL/localStorage:', pendingRole);
-      
-      // Check if user already has a conflicting role
-      if (pendingRole === 'sitter' || pendingRole === 'parent') {
-        const { data: hasConflict, error: conflictError } = await supabase
-          .rpc('has_conflicting_role', { 
-            _user_id: userId, 
-            _intended_role: pendingRole 
-          });
-        
-        if (conflictError) {
-          console.error('Error checking role conflict:', conflictError);
-        }
-        
-        if (hasConflict) {
-          const existingRole = pendingRole === 'sitter' ? 'parent' : 'sitter';
-          toast({
-            title: "Account Already Exists",
-            description: `This email is already registered as a ${existingRole}. You cannot use the same email for both parent and sitter accounts.`,
-            variant: "destructive",
-          });
-          
-          // Sign out and redirect to auth
-          await supabase.auth.signOut();
-          localStorage.removeItem('pending_role');
-          localStorage.removeItem('user_role');
-          navigate('/auth');
-          return;
-        }
-      }
-      
-      // Check actual roles from database
+
+      // Role comes from URL param (set during OAuth redirect) or localStorage (fallback for display only)
+      // We treat this as the user's explicit intention — but we VERIFY against DB before writing.
+      const pendingRole = (searchParams.get('role') || localStorage.getItem('pending_role')) as 'parent' | 'sitter' | null;
+      console.log('AuthCallback: pendingRole:', pendingRole);
+
+      // --- Check existing DB roles (source of truth) ---
       const { data: dbRoles } = await supabase
         .from('user_roles')
         .select('role')
         .eq('user_id', userId);
 
       const roleSet = new Set(dbRoles?.map(r => r.role) || []);
-      console.log('AuthCallback: DB roles:', Array.from(roleSet));
-      
-      // Check if user has a completed sitter profile
-      const { data: existingSitter } = await supabase
-        .from('sitters')
-        .select('id, approved_at')
-        .eq('user_id', userId)
-        .maybeSingle();
-      
-      const hasCompletedSitterProfile = !!existingSitter;
-      const isApprovedSitter = !!existingSitter?.approved_at;
-      
-      // Determine role with this priority:
-      // 1. If pending_role is 'sitter' -> route to sitter flow (user explicitly chose)
-      // 2. If user has a completed sitter profile in DB -> they're a sitter
-      // 3. If pending_role is 'parent' -> route to parent flow
-      // 4. Check DB roles as fallback
-      // 5. Default to parent
-      let role: string;
+      console.log('AuthCallback: existing DB roles:', Array.from(roleSet));
 
-      if (pendingRole === 'sitter') {
-        role = 'sitter';
-        console.log('AuthCallback: Using pending sitter role (user explicit choice)');
-      } else if (hasCompletedSitterProfile) {
-        role = 'sitter';
-        console.log('AuthCallback: User has existing sitter profile');
-      } else if (pendingRole === 'parent') {
-        role = 'parent';
-        console.log('AuthCallback: Using pending parent role (user explicit choice)');
-      } else if (roleSet.has('sitter')) {
-        role = 'sitter';
-      } else if (roleSet.has('parent')) {
-        role = 'parent';
-      } else {
-        role = 'parent';
+      // If user already has a role row — they're an existing user, just route them
+      if (roleSet.has('sitter') || roleSet.has('parent')) {
+        localStorage.removeItem('pending_role');
+
+        if (pendingRole && !roleSet.has(pendingRole)) {
+          // They signed in via Google with a conflicting role
+          const existingRole = roleSet.has('sitter') ? 'sitter' : 'parent';
+          toast({
+            title: "Account Already Exists",
+            description: `This email is already registered as a ${existingRole}. You cannot use the same email for both roles.`,
+            variant: "destructive",
+          });
+          await supabase.auth.signOut();
+          navigate('/auth');
+          return;
+        }
+
+        await routeExistingUser(userId, roleSet.has('sitter') ? 'sitter' : 'parent');
+        return;
       }
 
-      console.log('AuthCallback: Final determined role:', role);
-      
-      // Sync localStorage with determined role
-      localStorage.setItem('user_role', role);
+      // --- New OAuth user: we must assign a role server-side ---
+      if (!pendingRole || (pendingRole !== 'parent' && pendingRole !== 'sitter')) {
+        // No role known — can't safely assign — send them to choose
+        toast({
+          title: "Please select a role",
+          description: "Please choose whether you want to book a sitter or become a sitter.",
+        });
+        await supabase.auth.signOut();
+        navigate('/auth');
+        return;
+      }
+
+      setStatus(`Setting up your ${pendingRole} account...`);
+
+      // Write the user_roles row server-side using the service-role edge function
+      // We pass the access token so the edge function can verify identity
+      const { data: assignData, error: assignError } = await supabase.functions.invoke('atomic-signup', {
+        body: {
+          oauth_user_id: userId,           // existing auth user from OAuth
+          intended_role: pendingRole,
+          is_oauth: true,                  // tells the function to skip auth.admin.createUser
+        },
+        headers: { Authorization: `Bearer ${accessToken}` },
+      });
+
+      if (assignError || assignData?.error) {
+        const msg = assignData?.error || assignError?.message || 'Role assignment failed';
+        console.error('AuthCallback: role assignment error:', msg);
+        toast({ title: "Setup Failed", description: msg, variant: "destructive" });
+        await supabase.auth.signOut();
+        localStorage.removeItem('pending_role');
+        navigate('/auth');
+        return;
+      }
+
       localStorage.removeItem('pending_role');
+      console.log('AuthCallback: role assigned:', pendingRole);
 
-      if (role === 'sitter') {
-        if (!hasCompletedSitterProfile) {
-          console.log('AuthCallback: No sitter profile, redirecting to signup');
-          navigate('/sitter-signup');
-          return;
-        }
-        
-        if (!isApprovedSitter) {
-          console.log('AuthCallback: Sitter not approved, redirecting to signup');
-          navigate('/sitter-signup');
-          return;
-        }
-
-        console.log('AuthCallback: Approved sitter, redirecting to dashboard');
-        navigate('/sitter-dashboard');
-        return;
-      }
-
-      // Parent role - check for complete profile
-      setStatus("Loading your profile...");
-      const { data: profileData, error: profileError } = await supabase
-        .from('profiles')
-        .select('*')
-        .eq('user_id', userId)
-        .maybeSingle();
-
-      if (profileError) {
-        console.error('Error checking profile:', profileError);
-      }
-
-      // Determine profile completeness
-      const isNonEmpty = (v: any) => v != null && typeof v === 'string' && v.trim().length > 0;
-      const essentialsComplete = !!profileData &&
-                           isNonEmpty(profileData.first_name) &&
-                           isNonEmpty(profileData.last_name) &&
-                           isNonEmpty(profileData.phone) &&
-                           isNonEmpty(profileData.address);
-      
-      const hasChildren = typeof profileData?.num_children === 'number' && profileData.num_children > 0;
-      const hasPets = typeof profileData?.num_pets === 'number' && profileData.num_pets > 0;
-      const hasChildrenOrPets = hasChildren || hasPets;
-      
-      const childrenInfoOk = !hasChildren || isNonEmpty(profileData?.children_ages);
-      const petsInfoOk = !hasPets || isNonEmpty(profileData?.pet_details);
-      
-      const isComplete = essentialsComplete && hasChildrenOrPets && childrenInfoOk && petsInfoOk;
-
-      if (!isComplete) {
-        navigate('/parent-signup');
-        return;
-      }
-
-      // Profile complete, check for bookings to decide which tab
-      const { data: bookings } = await supabase
-        .from('bookings')
-        .select('status, payment_status')
-        .eq('user_id', userId);
-
-      const hasActiveBookings = bookings?.some(booking => 
-        booking.status === 'pending' || 
-        booking.status === 'confirmed' || 
-        booking.payment_status === 'pending'
-      );
-
-      if (hasActiveBookings) {
-        navigate('/parent-dashboard?tab=bookings');
-      } else {
-        navigate('/parent-dashboard?tab=book-sitter');
-      }
+      await routeExistingUser(userId, pendingRole);
 
     } catch (error) {
       console.error('Auth callback error:', error);
@@ -205,6 +118,62 @@ const AuthCallback = () => {
       });
       navigate('/auth');
     }
+  };
+
+  /** Route a user whose role is confirmed in DB */
+  const routeExistingUser = async (userId: string, role: string) => {
+    if (role === 'sitter') {
+      const { data: sitterData } = await supabase
+        .from('sitters')
+        .select('id, approved_at')
+        .eq('user_id', userId)
+        .maybeSingle();
+
+      if (!sitterData || !sitterData.approved_at) {
+        navigate('/sitter-signup');
+      } else {
+        navigate('/sitter-dashboard');
+      }
+      return;
+    }
+
+    // Parent — check profile completeness
+    setStatus("Loading your profile...");
+    const { data: profileData } = await supabase
+      .from('profiles')
+      .select('*')
+      .eq('user_id', userId)
+      .maybeSingle();
+
+    const isNonEmpty = (v: any) => v != null && typeof v === 'string' && v.trim().length > 0;
+    const essentialsComplete = !!profileData &&
+      isNonEmpty(profileData.first_name) &&
+      isNonEmpty(profileData.last_name) &&
+      isNonEmpty(profileData.phone) &&
+      isNonEmpty(profileData.address);
+
+    const hasChildren = typeof profileData?.num_children === 'number' && profileData.num_children > 0;
+    const hasPets = typeof profileData?.num_pets === 'number' && profileData.num_pets > 0;
+    const hasChildrenOrPets = hasChildren || hasPets;
+    const childrenInfoOk = !hasChildren || isNonEmpty(profileData?.children_ages);
+    const petsInfoOk = !hasPets || isNonEmpty(profileData?.pet_details);
+    const isComplete = essentialsComplete && hasChildrenOrPets && childrenInfoOk && petsInfoOk;
+
+    if (!isComplete) {
+      navigate('/parent-signup');
+      return;
+    }
+
+    const { data: bookings } = await supabase
+      .from('bookings')
+      .select('status, payment_status')
+      .eq('user_id', userId);
+
+    const hasActive = bookings?.some(b =>
+      b.status === 'pending' || b.status === 'confirmed' || b.payment_status === 'pending'
+    );
+
+    navigate(hasActive ? '/parent-dashboard?tab=bookings' : '/parent-dashboard?tab=book-sitter');
   };
 
   return (

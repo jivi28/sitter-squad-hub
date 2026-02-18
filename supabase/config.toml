@@ -36,3 +36,6 @@ verify_jwt = false
 
 [functions.send-sitter-confirmation]
 verify_jwt = false
+
+[functions.atomic-signup]
+verify_jwt = false

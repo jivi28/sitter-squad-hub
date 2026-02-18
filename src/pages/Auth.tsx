@@ -10,97 +10,55 @@ import { Alert, AlertDescription } from "@/components/ui/alert";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import Header from "@/components/Header";
-import { useSearchParams, useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 
 const Auth = () => {
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { toast } = useToast();
   const [searchParams, setSearchParams] = useSearchParams();
-  const navigate = useNavigate();
-  
-  // Role comes from URL only — no localStorage fallback
+
+  // Role + mode come exclusively from URL params — no localStorage fallback for role logic
   const roleParam = searchParams.get('role') as 'parent' | 'sitter' | null;
   const selectedRole = roleParam === 'parent' || roleParam === 'sitter' ? roleParam : null;
 
-  // Mode comes from URL: signup or login, default signup when role is set
   const modeParam = searchParams.get('mode') as 'signup' | 'login' | null;
   const defaultTab = modeParam === 'login' ? 'login' : modeParam === 'signup' ? 'signup' : (selectedRole ? 'signup' : 'login');
 
-  // Login form state
-  const [loginData, setLoginData] = useState({
-    email: "",
-    password: ""
-  });
-
-  // Signup form state
-  const [signupData, setSignupData] = useState({
-    email: "",
-    password: "",
-    confirmPassword: ""
-  });
+  const [loginData, setLoginData] = useState({ email: "", password: "" });
+  const [signupData, setSignupData] = useState({ email: "", password: "", confirmPassword: "" });
 
   const setRole = (role: 'parent' | 'sitter') => {
     const newParams = new URLSearchParams(searchParams);
     newParams.set('role', role);
-    if (!newParams.get('mode')) {
-      newParams.set('mode', 'signup');
-    }
+    if (!newParams.get('mode')) newParams.set('mode', 'signup');
     setSearchParams(newParams, { replace: true });
   };
 
-  const getSmartRedirect = async (userId: string, role: 'parent' | 'sitter'): Promise<string> => {
-    localStorage.setItem('user_role', role);
-    
-    if (role === 'sitter') {
-      const { data: sitterData } = await supabase
-        .from('sitters')
-        .select('id, status')
-        .eq('user_id', userId)
-        .maybeSingle();
-      
-      if (!sitterData) {
-        return '/sitter-signup';
-      }
-      return '/sitter-dashboard';
-    }
-    
-    try {
-      const { data: bookings, error } = await supabase
-        .from('bookings')
-        .select('status, payment_status')
-        .eq('user_id', userId)
-        .order('created_at', { ascending: false });
-
-      if (error || !bookings || bookings.length === 0) {
-        return '/parent-dashboard?tab=book-sitter';
-      }
-
-      const hasActiveBookings = bookings.some(booking => 
-        booking.status === 'pending' || 
-        booking.status === 'confirmed' || 
-        booking.payment_status === 'pending'
-      );
-
-      return hasActiveBookings ? '/parent-dashboard?tab=bookings' : '/parent-dashboard?tab=book-sitter';
-    } catch {
-      return '/parent-dashboard?tab=book-sitter';
-    }
-  };
-
-  // Check if user is already logged in
+  // Redirect already-logged-in users away from this page
   useEffect(() => {
     const checkExistingSession = async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (session?.user && selectedRole) {
-        const redirectUrl = await getSmartRedirect(session.user.id, selectedRole);
-        window.location.href = redirectUrl;
+      if (!session?.user || !selectedRole) return;
+
+      // Use DB roles (not localStorage) for redirect decision
+      const { data: dbRoles } = await supabase
+        .from('user_roles')
+        .select('role')
+        .eq('user_id', session.user.id);
+
+      const roles = new Set(dbRoles?.map(r => r.role) || []);
+
+      if (selectedRole === 'sitter' && roles.has('sitter')) {
+        window.location.href = '/sitter-dashboard';
+      } else if (selectedRole === 'parent' && roles.has('parent')) {
+        window.location.href = '/parent-dashboard?tab=book-sitter';
       }
     };
-    
     checkExistingSession();
   }, [selectedRole]);
 
+  // ── LOGIN ────────────────────────────────────────────────────────────────────
   const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedRole) {
@@ -115,16 +73,15 @@ const Auth = () => {
         email: loginData.email,
         password: loginData.password,
       });
-
       if (error) throw error;
 
       if (data.user) {
-        const { data: hasConflict } = await supabase
-          .rpc('has_conflicting_role', { 
-            _user_id: data.user.id, 
-            _intended_role: selectedRole 
-          });
-        
+        // Check role conflict using DB (server-side function) — never localStorage
+        const { data: hasConflict } = await supabase.rpc('has_conflicting_role', {
+          _user_id: data.user.id,
+          _intended_role: selectedRole,
+        });
+
         if (hasConflict) {
           const existingRole = selectedRole === 'sitter' ? 'parent' : 'sitter';
           setError(`This account is registered as a ${existingRole}. Please select "${existingRole === 'parent' ? 'Book a Sitter' : 'Become a Sitter'}" to log in.`);
@@ -132,25 +89,99 @@ const Auth = () => {
           setIsLoading(false);
           return;
         }
-        
-        toast({
-          title: "Success!",
-          description: "You have been logged in successfully.",
-        });
-        
-        const redirectUrl = await getSmartRedirect(data.user.id, selectedRole);
-        window.location.href = redirectUrl;
+
+        toast({ title: "Success!", description: "You have been logged in successfully." });
+
+        // Redirect based on DB role — never localStorage
+        if (selectedRole === 'sitter') {
+          const { data: sitterData } = await supabase
+            .from('sitters')
+            .select('id')
+            .eq('user_id', data.user.id)
+            .maybeSingle();
+          window.location.href = sitterData ? '/sitter-dashboard' : '/sitter-signup';
+        } else {
+          const { data: bookings } = await supabase
+            .from('bookings')
+            .select('status, payment_status')
+            .eq('user_id', data.user.id)
+            .order('created_at', { ascending: false });
+
+          const hasActive = bookings?.some(b =>
+            b.status === 'pending' || b.status === 'confirmed' || b.payment_status === 'pending'
+          );
+          window.location.href = hasActive
+            ? '/parent-dashboard?tab=bookings'
+            : '/parent-dashboard?tab=book-sitter';
+        }
       }
-    } catch (error: any) {
-      console.error('Login error:', error);
-      setError(error.message || 'Failed to log in');
+    } catch (err: any) {
+      console.error('Login error:', err);
+      setError(err.message || 'Failed to log in');
     } finally {
       setIsLoading(false);
     }
   };
 
+  // ── ATOMIC SIGNUP (email/password) ───────────────────────────────────────────
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedRole) {
+      setError("Please select whether you want to book a sitter or become a sitter.");
+      return;
+    }
+    if (signupData.password !== signupData.confirmPassword) {
+      setError("Passwords don't match");
+      return;
+    }
+    if (signupData.password.length < 6) {
+      setError("Password must be at least 6 characters");
+      return;
+    }
+
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      // Call server-side atomic signup — role is written server-side, never from localStorage
+      const { data, error } = await supabase.functions.invoke('atomic-signup', {
+        body: {
+          email: signupData.email,
+          password: signupData.password,
+          intended_role: selectedRole, // exact value from URL param
+        },
+      });
+
+      if (error) throw error;
+      if (data?.error) {
+        if (data.code === 'EMAIL_EXISTS') {
+          setError('An account with this email already exists. Please log in instead.');
+        } else if (data.code === 'CONFLICTING_ROLE') {
+          setError(data.error);
+        } else {
+          setError(data.error);
+        }
+        return;
+      }
+
+      toast({
+        title: "Account created!",
+        description: selectedRole === 'sitter'
+          ? "Please check your email to verify your account before completing your sitter application."
+          : "Please check your email to verify your account.",
+      });
+
+      window.location.href = `/verify-email?type=${selectedRole}&email=${encodeURIComponent(signupData.email)}`;
+    } catch (err: any) {
+      console.error('Signup error:', err);
+      setError(err.message || 'Failed to create account');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // ── GOOGLE OAUTH ─────────────────────────────────────────────────────────────
+  const handleGoogleAuth = async () => {
     if (!selectedRole) {
       setError("Please select whether you want to book a sitter or become a sitter.");
       return;
@@ -158,50 +189,21 @@ const Auth = () => {
     setIsLoading(true);
     setError(null);
 
-    if (signupData.password !== signupData.confirmPassword) {
-      setError("Passwords don't match");
-      setIsLoading(false);
-      return;
-    }
-
-    if (signupData.password.length < 6) {
-      setError("Password must be at least 6 characters");
-      setIsLoading(false);
-      return;
-    }
-
     try {
-      const email = signupData.email;
-      try { localStorage.setItem('pending_signup_email', email); } catch {}
-      const redirectUrl = `${window.location.origin}/verify-email?type=${selectedRole}&email=${encodeURIComponent(email)}`;
-      
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password: signupData.password,
+      // Store pending_role in localStorage ONLY for UI display during OAuth redirect.
+      // The AuthCallback will use this only to call the atomic-signup path server-side.
+      localStorage.setItem('pending_role', selectedRole);
+
+      const { error } = await supabase.auth.signInWithOAuth({
+        provider: 'google',
         options: {
-          emailRedirectTo: redirectUrl
-        }
+          redirectTo: `${window.location.origin}/auth-callback?role=${selectedRole}`,
+        },
       });
-
       if (error) throw error;
-
-      if (data.user) {
-        toast({
-          title: "Account created!",
-          description: selectedRole === 'sitter' 
-            ? "Please check your email to verify your account before completing your sitter application."
-            : "Please check your email to verify your account before booking sitters. You can start browsing available sitters now!",
-        });
-        window.location.href = `/verify-email?type=${selectedRole}&email=${encodeURIComponent(signupData.email)}`;
-      }
-    } catch (error: any) {
-      console.error('Signup error:', error);
-      if (error.message.includes('already registered')) {
-        setError('An account with this email already exists. Please try logging in instead.');
-      } else {
-        setError(error.message || 'Failed to create account');
-      }
-    } finally {
+    } catch (err: any) {
+      console.error('Google auth error:', err);
+      setError(err.message || 'Failed to authenticate with Google');
       setIsLoading(false);
     }
   };
@@ -216,34 +218,6 @@ const Auth = () => {
     setSignupData(prev => ({ ...prev, [name]: value }));
   };
 
-  const handleGoogleAuth = async () => {
-    if (!selectedRole) {
-      setError("Please select whether you want to book a sitter or become a sitter.");
-      return;
-    }
-    setIsLoading(true);
-    setError(null);
-
-    try {
-      // Store role preference before OAuth redirect
-      localStorage.setItem('pending_role', selectedRole);
-      
-      const redirectPath = '/auth-callback';
-      const { data, error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: {
-          redirectTo: `${window.location.origin}${redirectPath}?role=${selectedRole}`
-        }
-      });
-
-      if (error) throw error;
-    } catch (error: any) {
-      console.error('Google auth error:', error);
-      setError(error.message || 'Failed to authenticate with Google');
-      setIsLoading(false);
-    }
-  };
-
   const GoogleIcon = () => (
     <svg className="mr-2 h-4 w-4" viewBox="0 0 24 24">
       <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4" />
@@ -256,27 +230,25 @@ const Auth = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <main className="py-12">
         <div className="container mx-auto px-6">
           <div className="max-w-md mx-auto">
             <div className="text-center mb-8">
-              <h1 className="text-3xl font-bold text-foreground mb-2">
-                Welcome to BabySit Club
-              </h1>
+              <h1 className="text-3xl font-bold text-foreground mb-2">Welcome to BabySit Club</h1>
               <p className="text-muted-foreground">
-                {selectedRole 
+                {selectedRole
                   ? (selectedRole === 'sitter' ? 'Create your sitter account or sign in' : 'Create your account or sign in to book')
                   : 'Choose how you want to use BabySit Club'}
               </p>
             </div>
 
-            {/* Role Selection */}
+            {/* Role Selection — drives everything via URL */}
             <div className="mb-6 grid grid-cols-2 gap-3 sm:gap-4">
               <button
                 type="button"
                 onClick={() => setRole('parent')}
-                className={`p-4 sm:p-4 rounded-lg border-2 transition-all touch-manipulation active:scale-[0.98] ${
+                className={`p-4 rounded-lg border-2 transition-all touch-manipulation active:scale-[0.98] ${
                   selectedRole === 'parent'
                     ? 'border-primary bg-primary/5 shadow-sm'
                     : 'border-border bg-card hover:border-primary/50'
@@ -286,11 +258,11 @@ const Auth = () => {
                 <div className="text-sm font-medium">Book a Sitter</div>
                 <div className="text-xs text-muted-foreground">I need childcare</div>
               </button>
-              
+
               <button
                 type="button"
                 onClick={() => setRole('sitter')}
-                className={`p-4 sm:p-4 rounded-lg border-2 transition-all touch-manipulation active:scale-[0.98] ${
+                className={`p-4 rounded-lg border-2 transition-all touch-manipulation active:scale-[0.98] ${
                   selectedRole === 'sitter'
                     ? 'border-primary bg-primary/5 shadow-sm'
                     : 'border-border bg-card hover:border-primary/50'
@@ -313,22 +285,22 @@ const Auth = () => {
                 <CardContent className="p-6">
                   <Tabs value={defaultTab} className="w-full">
                     <TabsList className="grid w-full grid-cols-2">
-                      <TabsTrigger 
+                      <TabsTrigger
                         value="login"
                         onClick={() => {
-                          const newParams = new URLSearchParams(searchParams);
-                          newParams.set('mode', 'login');
-                          setSearchParams(newParams, { replace: true });
+                          const p = new URLSearchParams(searchParams);
+                          p.set('mode', 'login');
+                          setSearchParams(p, { replace: true });
                         }}
                       >
                         Login
                       </TabsTrigger>
-                      <TabsTrigger 
+                      <TabsTrigger
                         value="signup"
                         onClick={() => {
-                          const newParams = new URLSearchParams(searchParams);
-                          newParams.set('mode', 'signup');
-                          setSearchParams(newParams, { replace: true });
+                          const p = new URLSearchParams(searchParams);
+                          p.set('mode', 'signup');
+                          setSearchParams(p, { replace: true });
                         }}
                       >
                         Sign Up
@@ -342,6 +314,7 @@ const Auth = () => {
                       </Alert>
                     )}
 
+                    {/* LOGIN TAB */}
                     <TabsContent value="login">
                       <form onSubmit={handleLogin} className="space-y-4">
                         <div className="space-y-2">
@@ -356,14 +329,12 @@ const Auth = () => {
                           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                           Sign In
                         </Button>
-                        
                         <div className="relative">
                           <div className="absolute inset-0 flex items-center"><Separator className="w-full" /></div>
                           <div className="relative flex justify-center text-xs uppercase">
                             <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
                           </div>
                         </div>
-
                         <Button type="button" variant="outline" className="w-full min-h-[48px] touch-manipulation" disabled={isLoading} onClick={handleGoogleAuth}>
                           <GoogleIcon />
                           Continue with Google
@@ -371,6 +342,7 @@ const Auth = () => {
                       </form>
                     </TabsContent>
 
+                    {/* SIGNUP TAB */}
                     <TabsContent value="signup">
                       <form onSubmit={handleSignup} className="space-y-4">
                         <div className="space-y-2">
@@ -389,14 +361,12 @@ const Auth = () => {
                           {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
                           Create Account
                         </Button>
-                        
                         <div className="relative">
                           <div className="absolute inset-0 flex items-center"><Separator className="w-full" /></div>
                           <div className="relative flex justify-center text-xs uppercase">
                             <span className="bg-card px-2 text-muted-foreground">Or continue with</span>
                           </div>
                         </div>
-
                         <Button type="button" variant="outline" className="w-full min-h-[48px] touch-manipulation" disabled={isLoading} onClick={handleGoogleAuth}>
                           <GoogleIcon />
                           Sign up with Google
