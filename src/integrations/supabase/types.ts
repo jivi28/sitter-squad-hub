@@ -429,6 +429,7 @@ export type Database = {
       }
     }
     Functions: {
+      dev_reset_user: { Args: { _email: string }; Returns: Json }
       expire_old_booking_requests: { Args: never; Returns: undefined }
       has_booking_with_parent: {
         Args: { _parent_user_id: string; _sitter_user_id: string }
