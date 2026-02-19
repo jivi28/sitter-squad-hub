@@ -429,6 +429,10 @@ export type Database = {
       }
     }
     Functions: {
+      assign_role_once: {
+        Args: { _intended_role: Database["public"]["Enums"]["app_role"] }
+        Returns: Json
+      }
       dev_reset_user: { Args: { _email: string }; Returns: Json }
       expire_old_booking_requests: { Args: never; Returns: undefined }
       has_booking_with_parent: {

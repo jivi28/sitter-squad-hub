@@ -30,12 +30,12 @@ const AuthCallback = () => {
     return () => subscription.unsubscribe();
   }, []);
 
-  const handleAuthComplete = async (userId: string, accessToken: string) => {
+  const handleAuthComplete = async (userId: string, _accessToken: string) => {
     try {
       setStatus("Checking your account...");
 
-      // Role comes from URL param (set during OAuth redirect) or localStorage (fallback for display only)
-      // We treat this as the user's explicit intention — but we VERIFY against DB before writing.
+      // Role comes from URL param (set during OAuth redirect) or localStorage (fallback for display only).
+      // It is used ONLY to call assign_role_once — the RPC validates auth.uid() server-side.
       const pendingRole = (searchParams.get('role') || localStorage.getItem('pending_role')) as 'parent' | 'sitter' | null;
       console.log('AuthCallback: pendingRole:', pendingRole);
 
@@ -53,7 +53,7 @@ const AuthCallback = () => {
         localStorage.removeItem('pending_role');
 
         if (pendingRole && !roleSet.has(pendingRole)) {
-          // They signed in via Google with a conflicting role
+          // Signed in via Google with a conflicting intended role
           const existingRole = roleSet.has('sitter') ? 'sitter' : 'parent';
           toast({
             title: "Account Already Exists",
@@ -69,9 +69,9 @@ const AuthCallback = () => {
         return;
       }
 
-      // --- New OAuth user: we must assign a role server-side ---
+      // --- New OAuth user: assign role via SECURITY DEFINER RPC ---
+      // auth.uid() inside the RPC resolves to userId because the session is active.
       if (!pendingRole || (pendingRole !== 'parent' && pendingRole !== 'sitter')) {
-        // No role known — can't safely assign — send them to choose
         toast({
           title: "Please select a role",
           description: "Please choose whether you want to book a sitter or become a sitter.",
@@ -83,21 +83,27 @@ const AuthCallback = () => {
 
       setStatus(`Setting up your ${pendingRole} account...`);
 
-      // Write the user_roles row server-side using the service-role edge function
-      // We pass the access token so the edge function can verify identity
-      const { data: assignData, error: assignError } = await supabase.functions.invoke('atomic-signup', {
-        body: {
-          oauth_user_id: userId,           // existing auth user from OAuth
-          intended_role: pendingRole,
-          is_oauth: true,                  // tells the function to skip auth.admin.createUser
-        },
-        headers: { Authorization: `Bearer ${accessToken}` },
-      });
+      // assign_role_once is SECURITY DEFINER: it uses auth.uid() and enforces
+      // one-role-per-user via the partial unique index, so it cannot be tricked
+      // into assigning the wrong role even if the client sends bad data.
+      const { data: assignResult, error: rpcError } = await supabase
+        .rpc('assign_role_once' as any, { _intended_role: pendingRole });
 
-      if (assignError || assignData?.error) {
-        const msg = assignData?.error || assignError?.message || 'Role assignment failed';
+      const resultObj = assignResult as { success?: boolean; role?: string; error?: string; code?: string } | null;
+
+      if (rpcError || resultObj?.code === 'CONFLICTING_ROLE' || resultObj?.code === 'UNAUTHENTICATED') {
+        const msg = resultObj?.error || rpcError?.message || 'Role assignment failed';
         console.error('AuthCallback: role assignment error:', msg);
         toast({ title: "Setup Failed", description: msg, variant: "destructive" });
+        await supabase.auth.signOut();
+        localStorage.removeItem('pending_role');
+        navigate('/auth');
+        return;
+      }
+
+      if (!resultObj?.success) {
+        console.error('AuthCallback: unexpected assign_role_once result:', assignResult);
+        toast({ title: "Setup Failed", description: "Could not assign role. Please try again.", variant: "destructive" });
         await supabase.auth.signOut();
         localStorage.removeItem('pending_role');
         navigate('/auth');

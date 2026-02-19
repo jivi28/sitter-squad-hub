@@ -41,7 +41,6 @@ const Auth = () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user || !selectedRole) return;
 
-      // Use DB roles (not localStorage) for redirect decision
       const { data: dbRoles } = await supabase
         .from('user_roles')
         .select('role')
@@ -76,7 +75,7 @@ const Auth = () => {
       if (error) throw error;
 
       if (data.user) {
-        // Check role conflict using DB (server-side function) — never localStorage
+        // Check role conflict using DB — never localStorage
         const { data: hasConflict } = await supabase.rpc('has_conflicting_role', {
           _user_id: data.user.id,
           _intended_role: selectedRole,
@@ -92,7 +91,6 @@ const Auth = () => {
 
         toast({ title: "Success!", description: "You have been logged in successfully." });
 
-        // Redirect based on DB role — never localStorage
         if (selectedRole === 'sitter') {
           const { data: sitterData } = await supabase
             .from('sitters')
@@ -123,7 +121,11 @@ const Auth = () => {
     }
   };
 
-  // ── ATOMIC SIGNUP (email/password) ───────────────────────────────────────────
+  // ── EMAIL/PASSWORD SIGNUP ────────────────────────────────────────────────────
+  // Uses supabase.auth.signUp() directly.
+  // intended_role is stored in options.data (→ raw_user_meta_data).
+  // The handle_new_user DB trigger reads it and writes to user_roles atomically.
+  // No client secret is needed: the DB partial unique index enforces one role per user.
   const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!selectedRole) {
@@ -143,28 +145,29 @@ const Auth = () => {
     setError(null);
 
     try {
-      // Call server-side atomic signup — role is written server-side, never from localStorage.
-      // x-internal-secret guards the email/password path; value comes from VITE_INTERNAL_SIGNUP_SECRET.
-      const { data, error } = await supabase.functions.invoke('atomic-signup', {
-        body: {
-          email: signupData.email,
-          password: signupData.password,
-          intended_role: selectedRole, // exact value from URL param — never from localStorage
-        },
-        headers: {
-          'x-internal-secret': import.meta.env.VITE_INTERNAL_SIGNUP_SECRET as string ?? '',
+      const { data, error } = await supabase.auth.signUp({
+        email: signupData.email,
+        password: signupData.password,
+        options: {
+          // intended_role is read by the handle_new_user trigger — the only trusted write path
+          data: { intended_role: selectedRole },
+          emailRedirectTo: `${window.location.origin}/verify-email?type=${selectedRole}&email=${encodeURIComponent(signupData.email)}`,
         },
       });
 
-      if (error) throw error;
-      if (data?.error) {
-        if (data.code === 'EMAIL_EXISTS') {
+      if (error) {
+        const msg = error.message?.toLowerCase() ?? '';
+        if (msg.includes('already registered') || msg.includes('already exists') || error.status === 422) {
           setError('An account with this email already exists. Please log in instead.');
-        } else if (data.code === 'CONFLICTING_ROLE') {
-          setError(data.error);
         } else {
-          setError(data.error);
+          throw error;
         }
+        return;
+      }
+
+      // Supabase returns identities: [] when the email is already taken (security-by-obscurity mode)
+      if (data?.user && (data.user.identities?.length === 0)) {
+        setError('An account with this email already exists. Please log in instead.');
         return;
       }
 
@@ -185,6 +188,8 @@ const Auth = () => {
   };
 
   // ── GOOGLE OAUTH ─────────────────────────────────────────────────────────────
+  // pending_role stored in localStorage for UI only; role is written server-side
+  // in AuthCallback via the assign_role_once() SECURITY DEFINER RPC.
   const handleGoogleAuth = async () => {
     if (!selectedRole) {
       setError("Please select whether you want to book a sitter or become a sitter.");
@@ -194,8 +199,6 @@ const Auth = () => {
     setError(null);
 
     try {
-      // Store pending_role in localStorage ONLY for UI display during OAuth redirect.
-      // The AuthCallback will use this only to call the atomic-signup path server-side.
       localStorage.setItem('pending_role', selectedRole);
 
       const { error } = await supabase.auth.signInWithOAuth({
