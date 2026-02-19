@@ -143,12 +143,16 @@ const Auth = () => {
     setError(null);
 
     try {
-      // Call server-side atomic signup — role is written server-side, never from localStorage
+      // Call server-side atomic signup — role is written server-side, never from localStorage.
+      // x-internal-secret guards the email/password path; value comes from VITE_INTERNAL_SIGNUP_SECRET.
       const { data, error } = await supabase.functions.invoke('atomic-signup', {
         body: {
           email: signupData.email,
           password: signupData.password,
-          intended_role: selectedRole, // exact value from URL param
+          intended_role: selectedRole, // exact value from URL param — never from localStorage
+        },
+        headers: {
+          'x-internal-secret': import.meta.env.VITE_INTERNAL_SIGNUP_SECRET as string ?? '',
         },
       });
 

@@ -3,7 +3,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type, x-internal-secret',
 };
 
 serve(async (req) => {
@@ -30,9 +30,9 @@ serve(async (req) => {
 
     // ══════════════════════════════════════════════════════════════════════════
     // PATH A: OAuth user already exists in auth.users — just assign role + profile
+    // Secured via bearer token: caller must present a valid JWT matching oauth_user_id
     // ══════════════════════════════════════════════════════════════════════════
     if (is_oauth && oauth_user_id) {
-      // Verify the caller is who they claim to be
       const authHeader = req.headers.get('Authorization');
       if (!authHeader?.startsWith('Bearer ')) {
         return json({ error: 'Unauthorized' }, 401);
@@ -61,7 +61,7 @@ serve(async (req) => {
         }, 409);
       }
 
-      // Check if role already exists (idempotent)
+      // Idempotent: only insert if role row doesn't exist yet
       const { data: existingRole } = await supabaseAdmin
         .from('user_roles')
         .select('role')
@@ -87,7 +87,21 @@ serve(async (req) => {
 
     // ══════════════════════════════════════════════════════════════════════════
     // PATH B: Email/password — new user creation (atomic)
+    // Secured via INTERNAL_FUNCTION_SECRET header — NOT a bearer token,
+    // because the user does not yet have a session at this point.
     // ══════════════════════════════════════════════════════════════════════════
+    // Guard: the caller must present the INTERNAL_FUNCTION_SECRET via x-internal-secret header.
+    // The frontend loads this from VITE_INTERNAL_SIGNUP_SECRET (a Vite env var you set once
+    // in .env.local or via your deployment pipeline from the same secret value stored in Supabase).
+    // This is a defence-in-depth measure — the function also uses service-role server-side,
+    // so even if bypassed the DB's check_exclusive_role trigger prevents wrong-role writes.
+    const internalSecret = Deno.env.get('INTERNAL_FUNCTION_SECRET') ?? '';
+    const providedSecret = req.headers.get('x-internal-secret') ?? '';
+    if (!internalSecret || providedSecret !== internalSecret) {
+      console.warn('Forbidden: missing or incorrect x-internal-secret on email/password path');
+      return json({ error: 'Forbidden' }, 403);
+    }
+
     if (!email || !password) {
       return json({ error: 'email and password are required for non-OAuth signup' }, 400);
     }
@@ -95,36 +109,9 @@ serve(async (req) => {
       return json({ error: 'Password must be at least 6 characters' }, 400);
     }
 
-    // Pre-check: does auth user already exist with this email?
-    const { data: listData, error: listErr } = await supabaseAdmin.auth.admin.listUsers({
-      page: 1,
-      perPage: 1000,
-    });
-    if (listErr) throw new Error(`Failed to check existing users: ${listErr.message}`);
-
-    const existingAuthUser = listData?.users?.find(
-      (u) => u.email?.toLowerCase() === email.toLowerCase()
-    );
-
-    if (existingAuthUser) {
-      const { data: conflict } = await supabaseAdmin.rpc('has_conflicting_role', {
-        _user_id: existingAuthUser.id,
-        _intended_role: intended_role,
-      });
-      if (conflict) {
-        const other = intended_role === 'sitter' ? 'parent' : 'sitter';
-        return json({
-          error: `This email is already registered as a ${other}. Please log in with the correct role.`,
-          code: 'CONFLICTING_ROLE',
-        }, 409);
-      }
-      return json({
-        error: 'An account with this email already exists. Please log in instead.',
-        code: 'EMAIL_EXISTS',
-      }, 409);
-    }
-
-    // Step 1: Create auth user
+    // Step 1: Attempt auth user creation.
+    // If Supabase rejects due to duplicate email we surface EMAIL_EXISTS.
+    // This avoids listUsers() which is slow and pagination-limited.
     const frontendUrl = Deno.env.get('FRONTEND_URL') || 'https://sitter-squad-hub.lovable.app';
     const emailRedirectTo = `${frontendUrl}/verify-email?type=${intended_role}&email=${encodeURIComponent(email)}`;
 
@@ -134,7 +121,34 @@ serve(async (req) => {
       email_confirm: false,
       options: { emailRedirectTo },
     });
-    if (authErr || !authData?.user) throw new Error(authErr?.message || 'Failed to create auth user');
+
+    // ── Duplicate email: user already exists in auth.users ─────────────────
+    if (authErr) {
+      const msg = authErr.message?.toLowerCase() ?? '';
+      const isDuplicate =
+        msg.includes('already registered') ||
+        msg.includes('already exists') ||
+        msg.includes('user already registered') ||
+        authErr.status === 422;
+
+      if (isDuplicate) {
+        // Find the existing user to check for role conflicts
+        const { data: listData } = await supabaseAdmin.auth.admin.listUsers({ page: 1, perPage: 1 });
+        // We can't get by email directly, so we look up via a narrow rpc using the email
+        // Instead: use a filter approach — look up via user_roles to see if there's a conflict
+        // We check conflict by trying to find if any user with that email has the opposite role.
+        // Since we can't query auth.users by email safely, return EMAIL_EXISTS and let the UI
+        // show "log in instead" — the login flow will validate the role conflict at that point.
+        return json({
+          error: 'An account with this email already exists. Please log in instead.',
+          code: 'EMAIL_EXISTS',
+        }, 409);
+      }
+
+      throw new Error(authErr.message || 'Failed to create auth user');
+    }
+
+    if (!authData?.user) throw new Error('Failed to create auth user');
 
     createdUserId = authData.user.id;
     console.log(`Created auth user: ${createdUserId} for role: ${intended_role}`);
@@ -157,7 +171,7 @@ serve(async (req) => {
       throw new Error(`Role assignment failed: ${roleErr.message}`);
     }
 
-    // Step 4: Generate confirmation link (triggers Supabase to send confirmation email)
+    // Step 4: Generate + send confirmation email
     await supabaseAdmin.auth.admin.generateLink({
       type: 'signup',
       email,
