@@ -156,6 +156,7 @@ const Auth = () => {
       });
 
       if (error) {
+        // Only trust Supabase Auth's own response for "email exists" — never infer from public tables
         const msg = error.message?.toLowerCase() ?? '';
         if (msg.includes('already registered') || msg.includes('already exists') || error.status === 422) {
           setError('An account with this email already exists. Please log in instead.');
@@ -165,7 +166,8 @@ const Auth = () => {
         return;
       }
 
-      // Supabase returns identities: [] when the email is already taken (security-by-obscurity mode)
+      // Supabase returns identities: [] when the email is already taken (security-by-obscurity mode).
+      // This is the ONLY authoritative "email exists" signal — no public table lookups.
       if (data?.user && (data.user.identities?.length === 0)) {
         setError('An account with this email already exists. Please log in instead.');
         return;
@@ -199,8 +201,7 @@ const Auth = () => {
     setError(null);
 
     try {
-      localStorage.setItem('pending_role', selectedRole);
-
+      // Role is passed ONLY via the redirect URL param — no localStorage.
       const { error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
         options: {
