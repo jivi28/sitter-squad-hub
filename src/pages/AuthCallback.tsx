@@ -34,10 +34,13 @@ const AuthCallback = () => {
     try {
       setStatus("Checking your account...");
 
-      // Role comes from URL param (set during OAuth redirect) or localStorage (fallback for display only).
-      // It is used ONLY to call assign_role_once — the RPC validates auth.uid() server-side.
-      const pendingRole = (searchParams.get('role') || localStorage.getItem('pending_role')) as 'parent' | 'sitter' | null;
-      console.log('AuthCallback: pendingRole:', pendingRole);
+      // Role comes STRICTLY from URL param set during OAuth redirect.
+      // localStorage is NOT used — it can be stale and cause wrong-role assignment.
+      const pendingRole = searchParams.get('role') as 'parent' | 'sitter' | null;
+      console.log('AuthCallback: pendingRole from URL:', pendingRole);
+
+      // Clean up any stale localStorage value immediately
+      localStorage.removeItem('pending_role');
 
       // --- Check existing DB roles (source of truth) ---
       const { data: dbRoles } = await supabase
@@ -50,7 +53,6 @@ const AuthCallback = () => {
 
       // If user already has a role row — they're an existing user, just route them
       if (roleSet.has('sitter') || roleSet.has('parent')) {
-        localStorage.removeItem('pending_role');
 
         if (pendingRole && !roleSet.has(pendingRole)) {
           // Signed in via Google with a conflicting intended role
@@ -96,7 +98,7 @@ const AuthCallback = () => {
         console.error('AuthCallback: role assignment error:', msg);
         toast({ title: "Setup Failed", description: msg, variant: "destructive" });
         await supabase.auth.signOut();
-        localStorage.removeItem('pending_role');
+        
         navigate('/auth');
         return;
       }
@@ -105,12 +107,12 @@ const AuthCallback = () => {
         console.error('AuthCallback: unexpected assign_role_once result:', assignResult);
         toast({ title: "Setup Failed", description: "Could not assign role. Please try again.", variant: "destructive" });
         await supabase.auth.signOut();
-        localStorage.removeItem('pending_role');
+        
         navigate('/auth');
         return;
       }
 
-      localStorage.removeItem('pending_role');
+      
       console.log('AuthCallback: role assigned:', pendingRole);
 
       await routeExistingUser(userId, pendingRole);
