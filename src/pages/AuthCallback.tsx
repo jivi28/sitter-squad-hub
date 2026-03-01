@@ -75,11 +75,11 @@ const AuthCallback = () => {
       // auth.uid() inside the RPC resolves to userId because the session is active.
       if (!pendingRole || (pendingRole !== 'parent' && pendingRole !== 'sitter')) {
         toast({
-          title: "Please select a role",
-          description: "Please choose whether you want to book a sitter or become a sitter.",
+          title: "Choose role first",
+          description: "choose role first",
         });
         await supabase.auth.signOut();
-        navigate('/auth');
+        navigate('/auth?error=choose-role-first');
         return;
       }
 
