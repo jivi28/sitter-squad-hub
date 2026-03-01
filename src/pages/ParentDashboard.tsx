@@ -46,7 +46,8 @@ const ParentDashboard = () => {
   const { toast } = useToast();
   const [parentProfile, setParentProfile] = useState<ParentProfile | null>(null);
   const [bookingStats, setBookingStats] = useState<BookingStats | null>(null);
-  const [dataLoading, setDataLoading] = useState(false);
+  const [dataLoading, setDataLoading] = useState(true);
+  const [fetchError, setFetchError] = useState(false);
   const [spentPeriod, setSpentPeriod] = useState<'month' | 'all'>('all');
   const tabsRef = useRef<HTMLDivElement>(null);
   
@@ -66,10 +67,76 @@ const ParentDashboard = () => {
     let cancelled = false;
 
     const load = async () => {
-      await fetchParentData(() => cancelled);
-    };
-    load();
+      try {
+        setDataLoading(true);
+        setFetchError(false);
 
+        // 1. Profile — maybeSingle avoids throw on 0 or >1 rows
+        const { data: profile, error: profileError } = await supabase
+          .from("profiles")
+          .select("*")
+          .eq("user_id", user.id)
+          .maybeSingle();
+
+        if (cancelled) return;
+
+        if (profileError) {
+          console.error("Error fetching profile:", profileError);
+          toast({
+            title: "Profile error",
+            description: profileError.message,
+            variant: "destructive",
+          });
+          setFetchError(true);
+          return;
+        }
+
+        if (!profile) {
+          navigate("/parent-signup");
+          return;
+        }
+
+        // 2. Booking stats via server-side RPC (no client aggregation)
+        const { data: stats, error: statsError } = await supabase
+          .rpc("get_parent_booking_stats");
+
+        if (cancelled) return;
+
+        if (statsError) {
+          console.error("Error fetching stats:", statsError);
+          toast({
+            title: "Stats error",
+            description: statsError.message,
+            variant: "destructive",
+          });
+          // Still show profile even if stats fail
+          setParentProfile(profile);
+          setBookingStats({
+            total_bookings: 0, upcoming_bookings: 0, completed_bookings: 0,
+            total_spent: 0, spent_this_month: 0, spent_last_month: 0,
+          });
+          return;
+        }
+
+        if (cancelled) return;
+
+        setParentProfile(profile);
+        setBookingStats(stats as unknown as BookingStats);
+      } catch (error) {
+        if (cancelled) return;
+        console.error("Error fetching parent data:", error);
+        toast({
+          title: "Error",
+          description: "Failed to load dashboard data. Please try again.",
+          variant: "destructive",
+        });
+        setFetchError(true);
+      } finally {
+        if (!cancelled) setDataLoading(false);
+      }
+    };
+
+    load();
     return () => { cancelled = true; };
   }, [user, authLoading, navigate]);
 
@@ -77,112 +144,11 @@ const ParentDashboard = () => {
   useEffect(() => {
     if (initialTab === 'book-sitter' && !dataLoading && parentProfile) {
       setTimeout(() => {
-        const howItWorksSection = document.getElementById('how-it-works-section');
-        if (howItWorksSection) {
-          howItWorksSection.scrollIntoView({ 
-            behavior: 'smooth',
-            block: 'center' 
-          });
-        }
+        const el = document.getElementById('how-it-works-section');
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' });
       }, 300);
     }
   }, [initialTab, dataLoading, parentProfile]);
-
-  const fetchParentData = async (isCancelled?: () => boolean) => {
-    if (!user) return;
-
-    try {
-      setDataLoading(true);
-
-      // Fetch parent profile — use maybeSingle to avoid throwing on 0 or >1 rows
-      const { data: profile, error: profileError } = await supabase
-        .from("profiles")
-        .select("*")
-        .eq("user_id", user.id)
-        .maybeSingle();
-
-      if (isCancelled?.()) return;
-
-      if (profileError) {
-        console.error("Error fetching profile:", profileError);
-        toast({
-          title: "Profile error",
-          description: profileError.message,
-          variant: "destructive",
-        });
-        return; // don't redirect silently on DB errors
-      }
-
-      if (!profile) {
-        navigate("/parent-signup");
-        return;
-      }
-
-      // Fetch booking statistics — server-side filter to reduce transfer
-      const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
-      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
-
-      // Two lean queries instead of fetching every booking ever
-      const [allRes, recentRes] = await Promise.all([
-        supabase
-          .from("bookings")
-          .select("status, total_cost, booking_date, payment_status")
-          .eq("user_id", user.id),
-        supabase
-          .from("bookings")
-          .select("status, total_cost, booking_date, payment_status")
-          .eq("user_id", user.id)
-          .gte("booking_date", startOfLastMonth),
-      ]);
-
-      if (isCancelled?.()) return;
-
-      if (allRes.error) throw allRes.error;
-      if (recentRes.error) throw recentRes.error;
-
-      const bookings = allRes.data ?? [];
-      const recentBookings = recentRes.data ?? [];
-
-      const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
-
-      const paidAll = bookings.filter(b => b.status === 'completed' || b.payment_status === 'completed');
-      const paidRecent = recentBookings.filter(b => b.status === 'completed' || b.payment_status === 'completed');
-
-      const stats: BookingStats = {
-        total_bookings: bookings.length,
-        upcoming_bookings: bookings.filter(b =>
-          new Date(b.booking_date) >= now && ['pending', 'confirmed'].includes(b.status)
-        ).length,
-        completed_bookings: bookings.filter(b => b.status === 'completed').length,
-        total_spent: paidAll.reduce((sum, b) => sum + (Number(b.total_cost) || 0), 0),
-        spent_this_month: paidRecent
-          .filter(b => new Date(b.booking_date) >= new Date(startOfMonth))
-          .reduce((sum, b) => sum + (Number(b.total_cost) || 0), 0),
-        spent_last_month: paidRecent
-          .filter(b => {
-            const d = new Date(b.booking_date);
-            return d >= new Date(startOfLastMonth) && d <= endOfLastMonth;
-          })
-          .reduce((sum, b) => sum + (Number(b.total_cost) || 0), 0),
-      };
-
-      if (isCancelled?.()) return;
-
-      setParentProfile(profile);
-      setBookingStats(stats);
-    } catch (error) {
-      if (isCancelled?.()) return;
-      console.error("Error fetching parent data:", error);
-      toast({
-        title: "Error",
-        description: "Failed to load dashboard data. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      if (!isCancelled?.()) setDataLoading(false);
-    }
-  };
 
   // Show loading screen only if auth is loading OR if we're fetching data
   if (authLoading || dataLoading) {
