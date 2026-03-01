@@ -57,20 +57,20 @@ const ParentDashboard = () => {
   const { showOnboarding, completeOnboarding } = useOnboarding("parent");
 
   useEffect(() => {
-    // Don't redirect if we're still loading auth state
-    if (authLoading) {
-      
-      return;
-    }
-    
+    if (authLoading) return;
     if (!user) {
-      
       navigate("/auth");
       return;
     }
-    
-    
-    fetchParentData();
+
+    let cancelled = false;
+
+    const load = async () => {
+      await fetchParentData(() => cancelled);
+    };
+    load();
+
+    return () => { cancelled = true; };
   }, [user, authLoading, navigate]);
 
   // Auto-scroll to booking form when coming from homepage
@@ -88,80 +88,91 @@ const ParentDashboard = () => {
     }
   }, [initialTab, dataLoading, parentProfile]);
 
-  const fetchParentData = async () => {
-    if (!user) {
-      
-      return;
-    }
+  const fetchParentData = async (isCancelled?: () => boolean) => {
+    if (!user) return;
 
     try {
       setDataLoading(true);
-      
 
-      // Fetch parent profile
+      // Fetch parent profile — use maybeSingle to avoid throwing on 0 or >1 rows
       const { data: profile, error: profileError } = await supabase
         .from("profiles")
         .select("*")
         .eq("user_id", user.id)
-        .single();
+        .maybeSingle();
+
+      if (isCancelled?.()) return;
 
       if (profileError) {
         console.error("Error fetching profile:", profileError);
-        if (profileError.code === 'PGRST116') {
-          
-          navigate("/parent-signup");
-          return;
-        }
-        throw profileError;
+        toast({
+          title: "Profile error",
+          description: profileError.message,
+          variant: "destructive",
+        });
+        return; // don't redirect silently on DB errors
       }
 
-      
-
-      // Fetch booking statistics
-      const { data: bookings, error: bookingsError } = await supabase
-        .from("bookings")
-        .select("status, total_cost, booking_date, payment_status")
-        .eq("user_id", user.id);
-
-      if (bookingsError) {
-        console.error("Error fetching bookings:", bookingsError);
-        throw bookingsError;
+      if (!profile) {
+        navigate("/parent-signup");
+        return;
       }
 
-      
-
+      // Fetch booking statistics — server-side filter to reduce transfer
       const now = new Date();
-      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
-      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+      const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1).toISOString();
+      const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1).toISOString();
+
+      // Two lean queries instead of fetching every booking ever
+      const [allRes, recentRes] = await Promise.all([
+        supabase
+          .from("bookings")
+          .select("status, total_cost, booking_date, payment_status")
+          .eq("user_id", user.id),
+        supabase
+          .from("bookings")
+          .select("status, total_cost, booking_date, payment_status")
+          .eq("user_id", user.id)
+          .gte("booking_date", startOfLastMonth),
+      ]);
+
+      if (isCancelled?.()) return;
+
+      if (allRes.error) throw allRes.error;
+      if (recentRes.error) throw recentRes.error;
+
+      const bookings = allRes.data ?? [];
+      const recentBookings = recentRes.data ?? [];
+
       const endOfLastMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59);
 
-      // Only count completed bookings for spending
-      const paidBookings = bookings?.filter(b => 
-        b.status === 'completed' || b.payment_status === 'completed'
-      ) || [];
+      const paidAll = bookings.filter(b => b.status === 'completed' || b.payment_status === 'completed');
+      const paidRecent = recentBookings.filter(b => b.status === 'completed' || b.payment_status === 'completed');
 
       const stats: BookingStats = {
-        total_bookings: bookings?.length || 0,
-        upcoming_bookings: bookings?.filter(b => 
-          new Date(b.booking_date) >= now && 
-          ['pending', 'confirmed'].includes(b.status)
-        ).length || 0,
-        completed_bookings: bookings?.filter(b => b.status === 'completed').length || 0,
-        total_spent: paidBookings.reduce((sum, b) => sum + (Number(b.total_cost) || 0), 0),
-        spent_this_month: paidBookings
-          .filter(b => new Date(b.booking_date) >= startOfMonth)
+        total_bookings: bookings.length,
+        upcoming_bookings: bookings.filter(b =>
+          new Date(b.booking_date) >= now && ['pending', 'confirmed'].includes(b.status)
+        ).length,
+        completed_bookings: bookings.filter(b => b.status === 'completed').length,
+        total_spent: paidAll.reduce((sum, b) => sum + (Number(b.total_cost) || 0), 0),
+        spent_this_month: paidRecent
+          .filter(b => new Date(b.booking_date) >= new Date(startOfMonth))
           .reduce((sum, b) => sum + (Number(b.total_cost) || 0), 0),
-        spent_last_month: paidBookings
+        spent_last_month: paidRecent
           .filter(b => {
-            const date = new Date(b.booking_date);
-            return date >= startOfLastMonth && date <= endOfLastMonth;
+            const d = new Date(b.booking_date);
+            return d >= new Date(startOfLastMonth) && d <= endOfLastMonth;
           })
-          .reduce((sum, b) => sum + (Number(b.total_cost) || 0), 0)
+          .reduce((sum, b) => sum + (Number(b.total_cost) || 0), 0),
       };
+
+      if (isCancelled?.()) return;
 
       setParentProfile(profile);
       setBookingStats(stats);
     } catch (error) {
+      if (isCancelled?.()) return;
       console.error("Error fetching parent data:", error);
       toast({
         title: "Error",
@@ -169,7 +180,7 @@ const ParentDashboard = () => {
         variant: "destructive",
       });
     } finally {
-      setDataLoading(false);
+      if (!isCancelled?.()) setDataLoading(false);
     }
   };
 
