@@ -1,0 +1,1 @@
+DROP TRIGGER IF EXISTS on_profile_created ON public.profiles;
