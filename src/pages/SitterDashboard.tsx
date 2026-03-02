@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
@@ -28,7 +28,7 @@ interface SitterProfile {
   languages: string[] | null;
 }
 
-type DashboardState = "loading" | "no-profile" | "pending-approval" | "ready" | "error";
+type DashboardState = "loading" | "ready" | "pending-approval" | "error";
 
 const SitterDashboard = () => {
   const { user, loading: authLoading } = useAuth();
@@ -37,44 +37,54 @@ const SitterDashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
   const [sitterProfile, setSitterProfile] = useState<SitterProfile | null>(null);
   const [dashboardState, setDashboardState] = useState<DashboardState>("loading");
-  
-  // Get active tab from URL, default to "requests"
+  const isMountedRef = useRef(true);
+
   const activeTab = searchParams.get("tab") || "requests";
-  
-  // Handle tab change - update URL
+
   const handleTabChange = (value: string) => {
     setSearchParams({ tab: value });
   };
-  
-  // Onboarding
+
   const { showOnboarding, completeOnboarding } = useOnboarding("sitter");
 
-  const refetchProfile = async () => {
+  // Stable refetch for AvailabilityManager callback
+  const refetchSitterProfile = useCallback(async () => {
     if (!user) return;
-    const { data } = await supabase
-      .from('sitters')
-      .select('*')
-      .eq('user_id', user.id)
-      .maybeSingle();
-    if (data) setSitterProfile(data);
-  };
+    try {
+      const { data, error } = await supabase
+        .from("sitters")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle();
+      if (!isMountedRef.current) return;
+      if (error) throw error;
+      if (data) setSitterProfile(data);
+    } catch (err) {
+      console.error("Error refetching sitter profile:", err);
+    }
+  }, [user]);
+
+  useEffect(() => {
+    isMountedRef.current = true;
+    return () => { isMountedRef.current = false; };
+  }, []);
 
   useEffect(() => {
     if (authLoading) return;
 
     if (!user) {
-      navigate('/auth?role=sitter', { replace: true });
+      navigate("/auth?role=sitter", { replace: true });
       return;
     }
 
     let cancelled = false;
 
-    const fetchSitterProfile = async () => {
+    const load = async () => {
       try {
         const { data, error } = await supabase
-          .from('sitters')
-          .select('*')
-          .eq('user_id', user.id)
+          .from("sitters")
+          .select("*")
+          .eq("user_id", user.id)
           .maybeSingle();
 
         if (cancelled) return;
@@ -82,21 +92,20 @@ const SitterDashboard = () => {
         if (error) throw error;
 
         if (!data) {
-          navigate('/sitter-signup', { replace: true });
-          return;
-        }
-
-        if (!data.approved_at) {
-          setSitterProfile(data);
-          setDashboardState("pending-approval");
+          navigate("/sitter-signup", { replace: true });
           return;
         }
 
         setSitterProfile(data);
-        setDashboardState("ready");
-      } catch (error) {
+
+        if (!data.approved_at) {
+          setDashboardState("pending-approval");
+        } else {
+          setDashboardState("ready");
+        }
+      } catch (err) {
         if (cancelled) return;
-        console.error('Error fetching sitter profile:', error);
+        console.error("Error fetching sitter profile:", err);
         toast({
           title: "Error",
           description: "Failed to load your profile. Please try again.",
@@ -106,9 +115,11 @@ const SitterDashboard = () => {
       }
     };
 
-    fetchSitterProfile();
+    load();
     return () => { cancelled = true; };
   }, [user, authLoading, navigate, toast]);
+
+  // --- Render branches ---
 
   if (authLoading || dashboardState === "loading") {
     return (
@@ -131,7 +142,7 @@ const SitterDashboard = () => {
                 <p className="text-muted-foreground">
                   Your sitter profile is under review. We'll notify you once you're approved.
                 </p>
-                <Button variant="outline" onClick={() => navigate('/')}>
+                <Button variant="outline" onClick={() => navigate("/")}>
                   Go Home
                 </Button>
               </CardContent>
@@ -142,7 +153,7 @@ const SitterDashboard = () => {
     );
   }
 
-  if (!sitterProfile || dashboardState === "error") {
+  if (dashboardState === "error" || !sitterProfile) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
@@ -154,9 +165,7 @@ const SitterDashboard = () => {
               ? "Failed to load your profile. Please try again."
               : "You don't have access to the sitter dashboard."}
           </p>
-          <Button onClick={() => navigate('/')}>
-            Go Home
-          </Button>
+          <Button onClick={() => navigate("/")}>Go Home</Button>
         </div>
       </div>
     );
@@ -165,17 +174,17 @@ const SitterDashboard = () => {
   return (
     <div className="min-h-screen bg-background">
       <Header />
-      
+
       <SitterOnboardingModal isOpen={showOnboarding} onClose={completeOnboarding} />
-      
+
       <main className="py-8">
         <div className="container mx-auto px-6">
           {user && !user.email_confirmed_at && (
             <div className="mb-6">
-              <VerificationBanner userEmail={user.email || ''} />
+              <VerificationBanner userEmail={user.email || ""} />
             </div>
           )}
-          
+
           <div className="mb-8">
             <h1 className="text-3xl font-bold text-foreground mb-2">
               Welcome, {sitterProfile.first_name}!
@@ -198,7 +207,7 @@ const SitterDashboard = () => {
                 </div>
               </CardContent>
             </Card>
-            
+
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center space-x-2">
@@ -217,7 +226,9 @@ const SitterDashboard = () => {
                   <Clock className="h-5 w-5 text-primary" />
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Available Slots</p>
-                    <p className="text-2xl font-bold">{Array.isArray(sitterProfile.availability) ? sitterProfile.availability.length : 0}</p>
+                    <p className="text-2xl font-bold">
+                      {Array.isArray(sitterProfile.availability) ? sitterProfile.availability.length : 0}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -255,7 +266,7 @@ const SitterDashboard = () => {
                     "Respond to requests quickly to improve your profile",
                     "Review all booking details before accepting",
                     "You can decline requests that don't fit your schedule",
-                    "Parents get notified immediately when you respond"
+                    "Parents get notified immediately when you respond",
                   ]}
                   storageKey="sitter_requests_help"
                 />
@@ -272,14 +283,14 @@ const SitterDashboard = () => {
                     "Update your availability regularly to get more requests",
                     "Being available on weekends typically gets more bookings",
                     "Add multiple time slots to increase your chances",
-                    "Mark yourself unavailable for dates you can't work"
+                    "Mark yourself unavailable for dates you can't work",
                   ]}
                   storageKey="sitter_availability_help"
                 />
-                <AvailabilityManager 
+                <AvailabilityManager
                   sitterId={sitterProfile.id}
                   currentAvailability={Array.isArray(sitterProfile.availability) ? sitterProfile.availability : []}
-                  onAvailabilityUpdate={refetchProfile}
+                  onAvailabilityUpdate={refetchSitterProfile}
                 />
               </div>
             </TabsContent>
@@ -297,11 +308,13 @@ const SitterDashboard = () => {
                   <div className="space-y-4">
                     <div>
                       <p className="font-medium">Name</p>
-                      <p className="text-muted-foreground">{sitterProfile.first_name} {sitterProfile.last_name}</p>
+                      <p className="text-muted-foreground">
+                        {sitterProfile.first_name} {sitterProfile.last_name}
+                      </p>
                     </div>
                     <div>
                       <p className="font-medium">Email</p>
-                      <p className="text-muted-foreground">{user.email}</p>
+                      <p className="text-muted-foreground">{user?.email}</p>
                     </div>
                     <div>
                       <p className="font-medium">Hourly Rate</p>
@@ -319,17 +332,17 @@ const SitterDashboard = () => {
                         </p>
                         <div className="flex flex-wrap gap-2 mt-1">
                           {sitterProfile.languages.map((language: string) => (
-                            <span key={language} className="px-2 py-1 bg-accent text-accent-foreground text-xs rounded-full">
+                            <span
+                              key={language}
+                              className="px-2 py-1 bg-accent text-accent-foreground text-xs rounded-full"
+                            >
                               {language}
                             </span>
                           ))}
                         </div>
                       </div>
                     )}
-                    <Button 
-                      variant="outline" 
-                      onClick={() => navigate('/sitter-signup?edit=true')}
-                    >
+                    <Button variant="outline" onClick={() => navigate("/sitter-signup?edit=true")}>
                       Edit Profile
                     </Button>
                   </div>
@@ -339,7 +352,7 @@ const SitterDashboard = () => {
           </Tabs>
         </div>
       </main>
-      
+
       <MobileBottomNav userType="sitter" />
     </div>
   );
