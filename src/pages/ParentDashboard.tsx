@@ -96,11 +96,16 @@ const ParentDashboard = () => {
           return;
         }
 
-        // 2. Booking stats via server-side RPC (no client aggregation)
-        const { data: stats, error: statsError } = await supabase
+        // 2. Booking stats via server-side RPC (returns a single row)
+        const { data: statsRows, error: statsError } = await supabase
           .rpc("get_parent_booking_stats");
 
         if (cancelled) return;
+
+        const defaultStats: BookingStats = {
+          total_bookings: 0, upcoming_bookings: 0, completed_bookings: 0,
+          total_spent: 0, spent_this_month: 0, spent_last_month: 0,
+        };
 
         if (statsError) {
           console.error("Error fetching stats:", statsError);
@@ -109,19 +114,16 @@ const ParentDashboard = () => {
             description: statsError.message,
             variant: "destructive",
           });
-          // Still show profile even if stats fail
           setParentProfile(profile);
-          setBookingStats({
-            total_bookings: 0, upcoming_bookings: 0, completed_bookings: 0,
-            total_spent: 0, spent_this_month: 0, spent_last_month: 0,
-          });
+          setBookingStats(defaultStats);
           return;
         }
 
         if (cancelled) return;
 
+        const row = Array.isArray(statsRows) ? statsRows[0] : null;
         setParentProfile(profile);
-        setBookingStats(stats as unknown as BookingStats);
+        setBookingStats(row ? row as BookingStats : defaultStats);
       } catch (error) {
         if (cancelled) return;
         console.error("Error fetching parent data:", error);
