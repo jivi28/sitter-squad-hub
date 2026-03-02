@@ -1,11 +1,11 @@
 import { useState, useEffect } from "react";
-import { useSearchParams } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useAuth } from "@/hooks/useAuth";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Calendar, Clock, Users, DollarSign, Languages } from "lucide-react";
+import { Loader2, Calendar, Clock, Users, DollarSign, Languages, ShieldCheck } from "lucide-react";
 import Header from "@/components/Header";
 import AvailabilityManager from "@/components/AvailabilityManager";
 import BookingRequests from "@/components/BookingRequests";
@@ -28,12 +28,15 @@ interface SitterProfile {
   languages: string[] | null;
 }
 
+type DashboardState = "loading" | "no-profile" | "pending-approval" | "ready" | "error";
+
 const SitterDashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
   const [sitterProfile, setSitterProfile] = useState<SitterProfile | null>(null);
-  const [loading, setLoading] = useState(true);
+  const [dashboardState, setDashboardState] = useState<DashboardState>("loading");
   
   // Get active tab from URL, default to "requests"
   const activeTab = searchParams.get("tab") || "requests";
@@ -46,56 +49,68 @@ const SitterDashboard = () => {
   // Onboarding
   const { showOnboarding, completeOnboarding } = useOnboarding("sitter");
 
+  const refetchProfile = async () => {
+    if (!user) return;
+    const { data } = await supabase
+      .from('sitters')
+      .select('*')
+      .eq('user_id', user.id)
+      .maybeSingle();
+    if (data) setSitterProfile(data);
+  };
+
   useEffect(() => {
     if (authLoading) return;
 
     if (!user) {
-      // Direct redirect to auth page with sitter role
-      window.location.href = '/auth?role=sitter';
+      navigate('/auth?role=sitter', { replace: true });
       return;
     }
 
+    let cancelled = false;
+
+    const fetchSitterProfile = async () => {
+      try {
+        const { data, error } = await supabase
+          .from('sitters')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle();
+
+        if (cancelled) return;
+
+        if (error) throw error;
+
+        if (!data) {
+          navigate('/sitter-signup', { replace: true });
+          return;
+        }
+
+        if (!data.approved_at) {
+          setSitterProfile(data);
+          setDashboardState("pending-approval");
+          return;
+        }
+
+        setSitterProfile(data);
+        setDashboardState("ready");
+      } catch (error) {
+        if (cancelled) return;
+        console.error('Error fetching sitter profile:', error);
+        toast({
+          title: "Error",
+          description: "Failed to load your profile. Please try again.",
+          variant: "destructive",
+        });
+        setDashboardState("error");
+      }
+    };
+
     fetchSitterProfile();
-  }, [user, authLoading]);
+    return () => { cancelled = true; };
+  }, [user, authLoading, navigate, toast]);
 
-  const fetchSitterProfile = async () => {
-    if (!user) return;
-
-    try {
-      const { data, error } = await supabase
-        .from('sitters')
-        .select('*')
-        .eq('user_id', user.id)
-        .maybeSingle();
-
-      if (error) throw error;
-
-      if (!data) {
-        // No sitter profile found, redirect to signup
-        window.location.href = '/sitter-signup';
-        return;
-      }
-
-      if (!data.approved_at) {
-        // Not approved yet, redirect to signup page
-        window.location.href = '/sitter-signup';
-        return;
-      }
-
-      setSitterProfile(data);
-    } catch (error) {
-      console.error('Error fetching sitter profile:', error);
-      toast({
-        title: "Error",
-        description: "Failed to load your profile. Please try again.",
-        variant: "destructive",
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  if (authLoading || loading) {
+  if (authLoading || dashboardState === "loading") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -103,15 +118,43 @@ const SitterDashboard = () => {
     );
   }
 
-  if (!sitterProfile) {
+  if (dashboardState === "pending-approval") {
+    return (
+      <div className="min-h-screen bg-background">
+        <Header />
+        <main className="py-8">
+          <div className="container mx-auto px-6 flex items-center justify-center">
+            <Card className="max-w-md w-full">
+              <CardContent className="p-8 text-center space-y-4">
+                <ShieldCheck className="h-12 w-12 text-primary mx-auto" />
+                <h2 className="text-2xl font-bold">Approval Pending</h2>
+                <p className="text-muted-foreground">
+                  Your sitter profile is under review. We'll notify you once you're approved.
+                </p>
+                <Button variant="outline" onClick={() => navigate('/')}>
+                  Go Home
+                </Button>
+              </CardContent>
+            </Card>
+          </div>
+        </main>
+      </div>
+    );
+  }
+
+  if (!sitterProfile || dashboardState === "error") {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">Access Denied</h2>
+          <h2 className="text-2xl font-bold mb-4">
+            {dashboardState === "error" ? "Something went wrong" : "Access Denied"}
+          </h2>
           <p className="text-muted-foreground mb-4">
-            You don't have access to the sitter dashboard.
+            {dashboardState === "error"
+              ? "Failed to load your profile. Please try again."
+              : "You don't have access to the sitter dashboard."}
           </p>
-          <Button onClick={() => window.location.href = '/'}>
+          <Button onClick={() => navigate('/')}>
             Go Home
           </Button>
         </div>
@@ -236,7 +279,7 @@ const SitterDashboard = () => {
                 <AvailabilityManager 
                   sitterId={sitterProfile.id}
                   currentAvailability={Array.isArray(sitterProfile.availability) ? sitterProfile.availability : []}
-                  onAvailabilityUpdate={fetchSitterProfile}
+                  onAvailabilityUpdate={refetchProfile}
                 />
               </div>
             </TabsContent>
@@ -285,7 +328,7 @@ const SitterDashboard = () => {
                     )}
                     <Button 
                       variant="outline" 
-                      onClick={() => window.location.href = '/sitter-signup?edit=true'}
+                      onClick={() => navigate('/sitter-signup?edit=true')}
                     >
                       Edit Profile
                     </Button>
