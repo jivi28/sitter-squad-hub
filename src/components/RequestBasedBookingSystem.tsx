@@ -28,7 +28,7 @@ interface BookingRequest {
   emergencyVet?: string;
 }
 
-const RequestBasedBookingSystem = () => {
+const RequestBasedBookingSystem = ({ onBookingCreated }: { onBookingCreated?: () => void } = {}) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
