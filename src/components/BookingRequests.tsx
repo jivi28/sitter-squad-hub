@@ -94,14 +94,35 @@ const BookingRequests = () => {
           table: 'bookings',
         },
         () => {
-          
+          fetchBookingRequests();
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'bookings',
+        },
+        () => {
           fetchBookingRequests();
         }
       )
       .subscribe();
 
+    // Refetch when tab/window regains focus (catches cases realtime misses due to RLS)
+    const handleVisibility = () => {
+      if (document.visibilityState === 'visible') {
+        fetchBookingRequests();
+      }
+    };
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('focus', fetchBookingRequests);
+
     return () => {
       supabase.removeChannel(channel);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('focus', fetchBookingRequests);
     };
   }, []);
 

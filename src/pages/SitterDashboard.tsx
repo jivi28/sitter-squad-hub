@@ -5,7 +5,8 @@ import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Loader2, Calendar, Clock, Users, DollarSign, Languages, ShieldCheck } from "lucide-react";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Loader2, Calendar, Clock, Users, DollarSign, Languages, ShieldCheck, AlertTriangle } from "lucide-react";
 import Header from "@/components/Header";
 import AvailabilityManager from "@/components/AvailabilityManager";
 import BookingRequests from "@/components/BookingRequests";
@@ -194,8 +195,24 @@ const SitterDashboard = () => {
             </p>
           </div>
 
+          {/* Zero availability warning */}
+          {Array.isArray(sitterProfile.availability) && sitterProfile.availability.length === 0 && (
+            <Alert className="mb-6 border-amber-300 bg-amber-50 dark:bg-amber-950/20">
+              <AlertTriangle className="h-4 w-4 text-amber-600" />
+              <AlertDescription className="text-amber-800 dark:text-amber-200">
+                You have no availability slots set. Parents won't be able to find you until you{" "}
+                <button
+                  className="underline font-medium"
+                  onClick={() => handleTabChange("availability")}
+                >
+                  add your availability
+                </button>.
+              </AlertDescription>
+            </Alert>
+          )}
+
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center space-x-2">
@@ -214,7 +231,9 @@ const SitterDashboard = () => {
                   <Calendar className="h-5 w-5 text-primary" />
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Status</p>
-                    <p className="text-2xl font-bold capitalize">{sitterProfile.status}</p>
+                    <p className="text-2xl font-bold capitalize">
+                      {sitterProfile.approved_at ? "Approved" : sitterProfile.status}
+                    </p>
                   </div>
                 </div>
               </CardContent>
@@ -229,18 +248,6 @@ const SitterDashboard = () => {
                     <p className="text-2xl font-bold">
                       {Array.isArray(sitterProfile.availability) ? sitterProfile.availability.length : 0}
                     </p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center space-x-2">
-                  <Users className="h-5 w-5 text-primary" />
-                  <div>
-                    <p className="text-sm font-medium text-muted-foreground">This Month</p>
-                    <p className="text-2xl font-bold">0</p>
                   </div>
                 </div>
               </CardContent>
@@ -321,8 +328,8 @@ const SitterDashboard = () => {
                       <p className="text-muted-foreground">€{sitterProfile.hourly_rate}/hour</p>
                     </div>
                     <div>
-                      <p className="font-medium">Status</p>
-                      <p className="text-muted-foreground capitalize">{sitterProfile.status}</p>
+                    <p className="font-medium">Status</p>
+                      <p className="text-muted-foreground capitalize">{sitterProfile.approved_at ? "Approved" : sitterProfile.status}</p>
                     </div>
                     {sitterProfile.languages && sitterProfile.languages.length > 0 && (
                       <div>

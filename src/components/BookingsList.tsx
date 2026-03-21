@@ -49,7 +49,6 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
   const { toast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [debugInfo, setDebugInfo] = useState<string>("");
 
   useEffect(() => {
     fetchBookings();
@@ -84,12 +83,8 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         console.error('BookingsList: No authenticated user found');
-        setDebugInfo("No authenticated user found");
         return;
       }
-      
-      
-      setDebugInfo(`User ID: ${user.id}`);
 
       // Get sitter info using user_id instead of sitter id
       const { data: sitterData, error: sitterError } = await supabase
@@ -100,19 +95,13 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
 
       if (sitterError) {
         console.error('BookingsList: Error fetching sitter data:', sitterError);
-        setDebugInfo(`Error fetching sitter: ${sitterError.message}`);
         return;
       }
       
       if (!sitterData) {
         console.error('BookingsList: No sitter profile found for user');
-        setDebugInfo("No sitter profile found for user");
         return;
       }
-
-      const sitterName = `${sitterData.first_name} ${sitterData.last_name}`;
-      
-      setDebugInfo(`Sitter: ${sitterName}`);
 
       // Fetch bookings where this sitter is selected
       // IMPORTANT: Do not embed sitters in the select because bookings.sitter_id has no FK
@@ -142,7 +131,7 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
           .order('booking_date', { ascending: true });
 
         if (basicError) {
-          setDebugInfo(`Error fetching bookings: ${basicError.message}`);
+          console.error('BookingsList: Error fetching basic bookings:', basicError.message);
           return;
         }
 
@@ -153,12 +142,11 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
         }));
 
         setBookings(mappedBasic as any);
-        setDebugInfo(`Found ${mappedBasic.length} bookings (without profiles)`);
+        console.log(`BookingsList: Found ${mappedBasic.length} bookings (without profiles)`);
         return;
       }
 
       if (!bookingsWithProfiles || bookingsWithProfiles.length === 0) {
-        setDebugInfo(`No bookings found for ${sitterName}`);
         setBookings([]);
         return;
       }
@@ -172,10 +160,10 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
       }));
 
       setBookings(mappedBookings as any);
-      setDebugInfo(`Found ${mappedBookings.length} bookings`);
+      console.log(`BookingsList: Found ${mappedBookings.length} bookings`);
     } catch (error) {
       console.error('BookingsList: Error in fetchBookings:', error);
-      setDebugInfo(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('BookingsList: fetch error:', error);
       toast({
         title: "Error",
         description: "Failed to load bookings. Please try again.",
@@ -254,9 +242,6 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
             <Calendar className="h-5 w-5" />
             <span>My Bookings ({bookings.length})</span>
           </CardTitle>
-          {debugInfo && (
-            <p className="text-sm text-muted-foreground">Debug: {debugInfo}</p>
-          )}
         </CardHeader>
         <CardContent>
           {bookings.length === 0 ? (
