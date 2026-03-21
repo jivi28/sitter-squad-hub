@@ -95,7 +95,6 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
 
       if (sitterError) {
         console.error('BookingsList: Error fetching sitter data:', sitterError);
-        setDebugInfo(`Error fetching sitter: ${sitterError.message}`);
         return;
       }
       
