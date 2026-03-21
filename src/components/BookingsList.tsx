@@ -83,12 +83,8 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         console.error('BookingsList: No authenticated user found');
-        setDebugInfo("No authenticated user found");
         return;
       }
-      
-      
-      setDebugInfo(`User ID: ${user.id}`);
 
       // Get sitter info using user_id instead of sitter id
       const { data: sitterData, error: sitterError } = await supabase
