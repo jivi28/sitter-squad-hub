@@ -147,7 +147,6 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
       }
 
       if (!bookingsWithProfiles || bookingsWithProfiles.length === 0) {
-        setDebugInfo(`No bookings found for ${sitterName}`);
         setBookings([]);
         return;
       }
