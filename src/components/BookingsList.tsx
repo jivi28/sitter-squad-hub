@@ -49,7 +49,6 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
   const { toast } = useToast();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
-  const [debugInfo, setDebugInfo] = useState<string>("");
 
   useEffect(() => {
     fetchBookings();
