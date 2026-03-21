@@ -242,9 +242,6 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
             <Calendar className="h-5 w-5" />
             <span>My Bookings ({bookings.length})</span>
           </CardTitle>
-          {debugInfo && (
-            <p className="text-sm text-muted-foreground">Debug: {debugInfo}</p>
-          )}
         </CardHeader>
         <CardContent>
           {bookings.length === 0 ? (

@@ -328,8 +328,8 @@ const SitterDashboard = () => {
                       <p className="text-muted-foreground">€{sitterProfile.hourly_rate}/hour</p>
                     </div>
                     <div>
-                      <p className="font-medium">Status</p>
-                      <p className="text-muted-foreground capitalize">{sitterProfile.status}</p>
+                    <p className="font-medium">Status</p>
+                      <p className="text-muted-foreground capitalize">{sitterProfile.approved_at ? "Approved" : sitterProfile.status}</p>
                     </div>
                     {sitterProfile.languages && sitterProfile.languages.length > 0 && (
                       <div>
