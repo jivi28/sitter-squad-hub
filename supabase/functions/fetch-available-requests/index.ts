@@ -150,7 +150,13 @@ serve(async (req) => {
       });
     });
 
-    return new Response(JSON.stringify({ requests: filtered }), {
+    // Attach parent profile info to each request
+    const enriched = filtered.map((b: any) => ({
+      ...b,
+      profiles: profilesMap[b.user_id] || null,
+    }));
+
+    return new Response(JSON.stringify({ requests: enriched }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

@@ -244,9 +244,6 @@ const RequestBasedBookingSystem = ({ onBookingCreated }: { onBookingCreated?: ()
         });
       }
       
-      // Remove the original toast that was always shown
-      // Now handled in the notification try/catch blocks above
-
       // Reset form
       setRequest({
         date: "",
@@ -261,6 +258,9 @@ const RequestBasedBookingSystem = ({ onBookingCreated }: { onBookingCreated?: ()
         petCareInstructions: "",
         emergencyVet: ""
       });
+
+      // Notify parent dashboard to refresh stats/lists
+      onBookingCreated?.();
 
     } catch (error: any) {
       console.error('Request submission error:', error);
