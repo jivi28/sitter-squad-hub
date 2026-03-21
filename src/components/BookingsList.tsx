@@ -163,7 +163,7 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
       console.log(`BookingsList: Found ${mappedBookings.length} bookings`);
     } catch (error) {
       console.error('BookingsList: Error in fetchBookings:', error);
-      setDebugInfo(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      console.error('BookingsList: fetch error:', error);
       toast({
         title: "Error",
         description: "Failed to load bookings. Please try again.",
