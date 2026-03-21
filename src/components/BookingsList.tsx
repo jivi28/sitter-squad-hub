@@ -142,7 +142,7 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
         }));
 
         setBookings(mappedBasic as any);
-        setDebugInfo(`Found ${mappedBasic.length} bookings (without profiles)`);
+        console.log(`BookingsList: Found ${mappedBasic.length} bookings (without profiles)`);
         return;
       }
 
