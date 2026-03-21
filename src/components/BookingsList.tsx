@@ -160,7 +160,7 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
       }));
 
       setBookings(mappedBookings as any);
-      setDebugInfo(`Found ${mappedBookings.length} bookings`);
+      console.log(`BookingsList: Found ${mappedBookings.length} bookings`);
     } catch (error) {
       console.error('BookingsList: Error in fetchBookings:', error);
       setDebugInfo(`Error: ${error instanceof Error ? error.message : 'Unknown error'}`);
