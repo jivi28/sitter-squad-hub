@@ -100,13 +100,8 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
       
       if (!sitterData) {
         console.error('BookingsList: No sitter profile found for user');
-        setDebugInfo("No sitter profile found for user");
         return;
       }
-
-      const sitterName = `${sitterData.first_name} ${sitterData.last_name}`;
-      
-      setDebugInfo(`Sitter: ${sitterName}`);
 
       // Fetch bookings where this sitter is selected
       // IMPORTANT: Do not embed sitters in the select because bookings.sitter_id has no FK
