@@ -334,7 +334,7 @@ const ParentDashboard = () => {
                   ]}
                   storageKey="parent_booking_guide"
                 />
-                <RequestBasedBookingSystem />
+                <RequestBasedBookingSystem onBookingCreated={handleBookingCreated} />
               </CardContent>
             </Card>
           </TabsContent>
