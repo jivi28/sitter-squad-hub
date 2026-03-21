@@ -131,7 +131,7 @@ const BookingsList = ({ sitterId }: BookingsListProps) => {
           .order('booking_date', { ascending: true });
 
         if (basicError) {
-          setDebugInfo(`Error fetching bookings: ${basicError.message}`);
+          console.error('BookingsList: Error fetching basic bookings:', basicError.message);
           return;
         }
 
