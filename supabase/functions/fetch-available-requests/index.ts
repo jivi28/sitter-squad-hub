@@ -95,7 +95,7 @@ serve(async (req) => {
     const nowIso = new Date().toISOString();
     const { data: bookings, error: bookingsError } = await supabase
       .from("bookings")
-      .select("id, booking_date, start_time, end_time, num_children, total_cost, status, special_notes, preferred_language, user_id, request_expires_at, created_at")
+      .select("id, booking_date, start_time, end_time, num_children, total_cost, status, special_notes, preferred_language, user_id, request_expires_at, created_at, service_type")
       .in("status", ["pending", "received_responses"])
       .gt("request_expires_at", nowIso)
       .order("created_at", { ascending: false });
@@ -106,6 +106,19 @@ serve(async (req) => {
         status: 500,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
+    }
+
+    // Fetch parent profiles for matched bookings
+    const parentUserIds = [...new Set((bookings || []).map((b: any) => b.user_id))];
+    const profilesMap: Record<string, any> = {};
+    if (parentUserIds.length > 0) {
+      const { data: profiles } = await supabase
+        .from("profiles")
+        .select("user_id, first_name, last_name, children_ages, special_needs")
+        .in("user_id", parentUserIds);
+      for (const p of (profiles || [])) {
+        profilesMap[p.user_id] = p;
+      }
     }
 
     // Exclude requests already responded to by this sitter
@@ -137,7 +150,13 @@ serve(async (req) => {
       });
     });
 
-    return new Response(JSON.stringify({ requests: filtered }), {
+    // Attach parent profile info to each request
+    const enriched = filtered.map((b: any) => ({
+      ...b,
+      profiles: profilesMap[b.user_id] || null,
+    }));
+
+    return new Response(JSON.stringify({ requests: enriched }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (e) {

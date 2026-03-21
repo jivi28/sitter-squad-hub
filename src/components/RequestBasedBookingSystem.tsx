@@ -28,7 +28,7 @@ interface BookingRequest {
   emergencyVet?: string;
 }
 
-const RequestBasedBookingSystem = () => {
+const RequestBasedBookingSystem = ({ onBookingCreated }: { onBookingCreated?: () => void } = {}) => {
   const { user } = useAuth();
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -244,9 +244,6 @@ const RequestBasedBookingSystem = () => {
         });
       }
       
-      // Remove the original toast that was always shown
-      // Now handled in the notification try/catch blocks above
-
       // Reset form
       setRequest({
         date: "",
@@ -261,6 +258,9 @@ const RequestBasedBookingSystem = () => {
         petCareInstructions: "",
         emergencyVet: ""
       });
+
+      // Notify parent dashboard to refresh stats/lists
+      onBookingCreated?.();
 
     } catch (error: any) {
       console.error('Request submission error:', error);

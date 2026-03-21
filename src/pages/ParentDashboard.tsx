@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 import { useAuth } from "@/hooks/useAuth";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -57,6 +57,75 @@ const ParentDashboard = () => {
   // Onboarding
   const { showOnboarding, completeOnboarding } = useOnboarding("parent");
 
+  const isProfileComplete = (profile: any): boolean => {
+    const isNonEmpty = (v: any) => v != null && typeof v === 'string' && v.trim().length > 0;
+    const essentials = isNonEmpty(profile.first_name) && isNonEmpty(profile.last_name) &&
+      isNonEmpty(profile.phone) && isNonEmpty(profile.address);
+    const hasChildren = typeof profile.num_children === 'number' && profile.num_children > 0;
+    const hasPets = typeof profile.num_pets === 'number' && profile.num_pets > 0;
+    const hasChildrenOrPets = hasChildren || hasPets;
+    const childrenInfoOk = !hasChildren || isNonEmpty(profile.children_ages);
+    const petsInfoOk = !hasPets || isNonEmpty(profile.pet_details);
+    return essentials && hasChildrenOrPets && childrenInfoOk && petsInfoOk;
+  };
+
+  const loadDashboardData = useCallback(async (userId: string, signal?: { cancelled: boolean }) => {
+    try {
+      setDataLoading(true);
+      setFetchError(false);
+
+      const { data: profile, error: profileError } = await supabase
+        .from("profiles")
+        .select("*")
+        .eq("user_id", userId)
+        .maybeSingle();
+
+      if (signal?.cancelled) return;
+
+      if (profileError) {
+        console.error("Error fetching profile:", profileError);
+        toast({ title: "Profile error", description: profileError.message, variant: "destructive" });
+        setFetchError(true);
+        return;
+      }
+
+      if (!profile || !isProfileComplete(profile)) {
+        navigate("/parent-signup");
+        return;
+      }
+
+      const { data: statsRows, error: statsError } = await supabase.rpc("get_parent_booking_stats");
+
+      if (signal?.cancelled) return;
+
+      const defaultStats: BookingStats = {
+        total_bookings: 0, upcoming_bookings: 0, completed_bookings: 0,
+        total_spent: 0, spent_this_month: 0, spent_last_month: 0,
+      };
+
+      if (statsError) {
+        console.error("Error fetching stats:", statsError);
+        toast({ title: "Stats error", description: statsError.message, variant: "destructive" });
+        setParentProfile(profile);
+        setBookingStats(defaultStats);
+        return;
+      }
+
+      if (signal?.cancelled) return;
+
+      const row = Array.isArray(statsRows) ? statsRows[0] : null;
+      setParentProfile(profile);
+      setBookingStats(row ? row as BookingStats : defaultStats);
+    } catch (error) {
+      if (signal?.cancelled) return;
+      console.error("Error fetching parent data:", error);
+      toast({ title: "Error", description: "Failed to load dashboard data. Please try again.", variant: "destructive" });
+      setFetchError(true);
+    } finally {
+      if (!signal?.cancelled) setDataLoading(false);
+    }
+  }, [navigate, toast]);
+
   useEffect(() => {
     if (authLoading) return;
     if (!user) {
@@ -64,83 +133,14 @@ const ParentDashboard = () => {
       return;
     }
 
-    let cancelled = false;
+    const signal = { cancelled: false };
+    loadDashboardData(user.id, signal);
+    return () => { signal.cancelled = true; };
+  }, [user, authLoading, navigate, loadDashboardData]);
 
-    const load = async () => {
-      try {
-        setDataLoading(true);
-        setFetchError(false);
-
-        // 1. Profile — maybeSingle avoids throw on 0 or >1 rows
-        const { data: profile, error: profileError } = await supabase
-          .from("profiles")
-          .select("*")
-          .eq("user_id", user.id)
-          .maybeSingle();
-
-        if (cancelled) return;
-
-        if (profileError) {
-          console.error("Error fetching profile:", profileError);
-          toast({
-            title: "Profile error",
-            description: profileError.message,
-            variant: "destructive",
-          });
-          setFetchError(true);
-          return;
-        }
-
-        if (!profile) {
-          navigate("/parent-signup");
-          return;
-        }
-
-        // 2. Booking stats via server-side RPC (returns a single row)
-        const { data: statsRows, error: statsError } = await supabase
-          .rpc("get_parent_booking_stats");
-
-        if (cancelled) return;
-
-        const defaultStats: BookingStats = {
-          total_bookings: 0, upcoming_bookings: 0, completed_bookings: 0,
-          total_spent: 0, spent_this_month: 0, spent_last_month: 0,
-        };
-
-        if (statsError) {
-          console.error("Error fetching stats:", statsError);
-          toast({
-            title: "Stats error",
-            description: statsError.message,
-            variant: "destructive",
-          });
-          setParentProfile(profile);
-          setBookingStats(defaultStats);
-          return;
-        }
-
-        if (cancelled) return;
-
-        const row = Array.isArray(statsRows) ? statsRows[0] : null;
-        setParentProfile(profile);
-        setBookingStats(row ? row as BookingStats : defaultStats);
-      } catch (error) {
-        if (cancelled) return;
-        console.error("Error fetching parent data:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load dashboard data. Please try again.",
-          variant: "destructive",
-        });
-        setFetchError(true);
-      } finally {
-        if (!cancelled) setDataLoading(false);
-      }
-    };
-
-    load();
-    return () => { cancelled = true; };
-  }, [user, authLoading, navigate]);
+  const handleBookingCreated = useCallback(() => {
+    if (user) loadDashboardData(user.id);
+  }, [user, loadDashboardData]);
 
   // Auto-scroll to booking form when coming from homepage
   useEffect(() => {
@@ -334,7 +334,7 @@ const ParentDashboard = () => {
                   ]}
                   storageKey="parent_booking_guide"
                 />
-                <RequestBasedBookingSystem />
+                <RequestBasedBookingSystem onBookingCreated={handleBookingCreated} />
               </CardContent>
             </Card>
           </TabsContent>
