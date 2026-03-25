@@ -5,7 +5,7 @@ import { useBookingUpdates } from "@/hooks/useBookingUpdates";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Calendar, Clock, User, DollarSign, RefreshCw, Heart, CreditCard, AlertCircle } from "lucide-react";
+import { Loader2, Calendar, Clock, User, DollarSign, RefreshCw, Heart, CreditCard, AlertCircle, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { SitterContactInfo } from "./SitterContactInfo";
