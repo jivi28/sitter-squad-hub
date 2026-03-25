@@ -601,12 +601,29 @@ const ParentBookingHistory = () => {
                   </Dialog>
                  )}
                  
-                 {booking.status === "pending" && booking.request_expires_at && (
-                   <ExtendRequestButton
-                     bookingId={booking.id}
-                     extensionCount={booking.extension_count || 0}
-                     onExtend={handleExtendRequest}
-                   />
+                 {(booking.status === "pending" || booking.status === "received_responses") && (
+                   <>
+                     {booking.status === "pending" && booking.request_expires_at && (
+                       <ExtendRequestButton
+                         bookingId={booking.id}
+                         extensionCount={booking.extension_count || 0}
+                         onExtend={handleExtendRequest}
+                       />
+                     )}
+                     <Button
+                       variant="destructive"
+                       size="sm"
+                       onClick={() => handleCancelBooking(booking.id)}
+                       disabled={cancellingId === booking.id}
+                     >
+                       {cancellingId === booking.id ? (
+                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                       ) : (
+                         <XCircle className="h-4 w-4 mr-2" />
+                       )}
+                       Cancel Request
+                     </Button>
+                   </>
                  )}
                  
                  {booking.sitter_id && booking.status === "completed" && (
