@@ -73,6 +73,36 @@ const ParentBookingHistory = () => {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [rebooking, setRebooking] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+  const handleCancelBooking = async (bookingId: string) => {
+    if (!confirm("Are you sure you want to cancel this booking request?")) return;
+    
+    try {
+      setCancellingId(bookingId);
+      const { error } = await supabase
+        .from('bookings')
+        .update({ status: 'cancelled' })
+        .eq('id', bookingId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Request Cancelled",
+        description: "Your booking request has been cancelled.",
+      });
+      fetchBookings();
+    } catch (error) {
+      console.error("Error cancelling booking:", error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setCancellingId(null);
+    }
+  };
 
   // Extension handling
   const handleExtendRequest = async (bookingId: string, currentExtensionCount: number) => {
