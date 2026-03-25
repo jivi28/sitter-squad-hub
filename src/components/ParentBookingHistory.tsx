@@ -352,14 +352,18 @@ const ParentBookingHistory = () => {
               <div className="flex items-center justify-between mb-2">
                 <CardTitle className="flex items-center gap-2">
                   <User className="h-5 w-5" />
-                  {booking.sitters 
-                    ? `${booking.sitters.first_name} ${booking.sitters.last_name}`
-                    : "Waiting for Sitter"}
+                  {booking.status === "cancelled"
+                    ? "Cancelled Request"
+                    : booking.sitters 
+                      ? `${booking.sitters.first_name} ${booking.sitters.last_name}`
+                      : "Waiting for Sitter"}
                 </CardTitle>
-                <RequestExpirationTimer 
-                  expiresAt={booking.request_expires_at || null}
-                  status={booking.status}
-                />
+                {booking.status !== "cancelled" && (
+                  <RequestExpirationTimer 
+                    expiresAt={booking.request_expires_at || null}
+                    status={booking.status}
+                  />
+                )}
               </div>
               <CardDescription className="mb-4">
                 Booking created on {new Date(booking.created_at).toLocaleDateString()}
