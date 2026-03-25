@@ -379,7 +379,7 @@ const ParentBookingHistory = () => {
                 <Alert className="mb-4">
                   <AlertCircle className="h-4 w-4" />
                   <AlertDescription>
-                    This booking request will expire in <RequestExpirationTimer expiresAt={booking.request_expires_at} status={booking.status} />. 
+                    This booking request will expire soon. 
                     {" "}After expiration, you'll need to create a new request.
                   </AlertDescription>
                 </Alert>
