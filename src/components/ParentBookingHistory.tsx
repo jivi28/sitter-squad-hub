@@ -5,7 +5,7 @@ import { useBookingUpdates } from "@/hooks/useBookingUpdates";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Loader2, Calendar, Clock, User, DollarSign, RefreshCw, Heart, CreditCard, AlertCircle } from "lucide-react";
+import { Loader2, Calendar, Clock, User, DollarSign, RefreshCw, Heart, CreditCard, AlertCircle, XCircle } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { SitterContactInfo } from "./SitterContactInfo";
@@ -73,6 +73,36 @@ const ParentBookingHistory = () => {
   const [selectedBooking, setSelectedBooking] = useState<Booking | null>(null);
   const [rebooking, setRebooking] = useState(false);
   const [paymentLoading, setPaymentLoading] = useState<string | null>(null);
+  const [cancellingId, setCancellingId] = useState<string | null>(null);
+
+  const handleCancelBooking = async (bookingId: string) => {
+    if (!confirm("Are you sure you want to cancel this booking request?")) return;
+    
+    try {
+      setCancellingId(bookingId);
+      const { error } = await supabase
+        .from('bookings')
+        .update({ status: 'cancelled' })
+        .eq('id', bookingId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Request Cancelled",
+        description: "Your booking request has been cancelled.",
+      });
+      fetchBookings();
+    } catch (error) {
+      console.error("Error cancelling booking:", error);
+      toast({
+        title: "Error",
+        description: "Failed to cancel request. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setCancellingId(null);
+    }
+  };
 
   // Extension handling
   const handleExtendRequest = async (bookingId: string, currentExtensionCount: number) => {
@@ -571,12 +601,29 @@ const ParentBookingHistory = () => {
                   </Dialog>
                  )}
                  
-                 {booking.status === "pending" && booking.request_expires_at && (
-                   <ExtendRequestButton
-                     bookingId={booking.id}
-                     extensionCount={booking.extension_count || 0}
-                     onExtend={handleExtendRequest}
-                   />
+                 {(booking.status === "pending" || booking.status === "received_responses") && (
+                   <>
+                     {booking.status === "pending" && booking.request_expires_at && (
+                       <ExtendRequestButton
+                         bookingId={booking.id}
+                         extensionCount={booking.extension_count || 0}
+                         onExtend={handleExtendRequest}
+                       />
+                     )}
+                     <Button
+                       variant="destructive"
+                       size="sm"
+                       onClick={() => handleCancelBooking(booking.id)}
+                       disabled={cancellingId === booking.id}
+                     >
+                       {cancellingId === booking.id ? (
+                         <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                       ) : (
+                         <XCircle className="h-4 w-4 mr-2" />
+                       )}
+                       Cancel Request
+                     </Button>
+                   </>
                  )}
                  
                  {booking.sitter_id && booking.status === "completed" && (
