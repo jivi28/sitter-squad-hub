@@ -83,34 +83,12 @@ const BookingRequests = () => {
       if (user) localStorage.setItem('user_id', user.id);
     });
 
-    // Set up real-time listener for new booking requests
-    const channel = supabase
-      .channel('booking-requests-sitter')
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'bookings',
-        },
-        () => {
-          fetchBookingRequests();
-        }
-      )
-      .on(
-        'postgres_changes',
-        {
-          event: 'UPDATE',
-          schema: 'public',
-          table: 'bookings',
-        },
-        () => {
-          fetchBookingRequests();
-        }
-      )
-      .subscribe();
+    // Poll every 15 seconds for new matching requests.
+    // Realtime postgres_changes cannot deliver INSERT events for bookings
+    // the sitter has no RLS SELECT access to (pending bookings have no sitter_id).
+    const pollInterval = setInterval(fetchBookingRequests, 15000);
 
-    // Refetch when tab/window regains focus (catches cases realtime misses due to RLS)
+    // Also refetch when tab/window regains focus
     const handleVisibility = () => {
       if (document.visibilityState === 'visible') {
         fetchBookingRequests();
@@ -120,7 +98,7 @@ const BookingRequests = () => {
     window.addEventListener('focus', fetchBookingRequests);
 
     return () => {
-      supabase.removeChannel(channel);
+      clearInterval(pollInterval);
       document.removeEventListener('visibilitychange', handleVisibility);
       window.removeEventListener('focus', fetchBookingRequests);
     };
